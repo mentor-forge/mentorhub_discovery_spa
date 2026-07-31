@@ -1,1 +1,122 @@
-# mentorhub_discovery_spa
+# Mentor Hub — Discovery SPA
+
+## Current State
+Guidance for LLM Code Assistants - NOTE: We are currently pre-release. At this time, no changes should consider backward compatibility. Likewise, while we anticipate versioning releases in the future at this point, no consideration should be given to bumping any versions beyond managing the internal api_utils spa_utils dependencies. We are in a rapid iteration phase where features can be deprecated and removed without pause. When working in this repo we should keep our eyes out for potential re-usable code that could be migrated to spa_utils. This code should be implemented locally, and issues opened in the api_utils repo when it is time to migrate code.
+
+UI Components should stick to Vuetify styling, and leverage re-usable input components from SPA utils when possible. If a spa_utils component need to be updated, the code can be copied to this repo, edited, tested, and migrated to the utils repo like new re-usable components are.
+
+Bootstrapped from `mentorhub_mentee_spa` (F-W18). Domain pages are stripped; authenticated landing is a Discovery stub ready for F-DS01 CardGrid work.
+
+## Prerequisites
+- Mentor Hub [Developers Edition](https://github.com/mentor-forge/mentorhub/blob/main/CONTRIBUTING.md)
+- Developer [SPA Standard Prerequisites](https://github.com/mentor-forge/mentorhub/blob/main/DeveloperEdition/standards/spa_standards.md)
+
+## Quick Start
+
+```sh
+## Just run the service
+npm run service 
+```
+
+## Developer Commands
+
+```sh
+## install dependencies (run `mh` first for CodeArtifact auth)
+npm ci
+
+## install Cypress binaries
+npx cypress install
+
+## package code for deployment
+npm run build 
+
+## run dev server, assumes api is running - captures command line
+npm run dev 
+
+## type-check (lint)
+npm run lint
+
+## run unit tests
+npm run test:unit
+
+## run unit tests with coverage
+npm run test:coverage
+
+## run unit tests with UI
+npm run test:ui
+
+## run Cypress E2E tests
+npm run cypress
+
+## run Cypress E2E tests headlessly
+npm run cypress:run
+
+## de down and start db + api containers
+npm run api 
+
+## de down and start db + api + spa containers and open 
+npm run service 
+
+## open page in the browser
+npm run open
+
+## Build SPA docker container locally (run `mh` first)
+npm run container
+```
+
+## Architecture Overview
+
+```
+src/
+  api/              # API client layer (types.ts, client.ts)
+  pages/            # Route-level components (Discovery stub, AdminPage)
+  composables/      # App-specific composables (useConfig, useRoles wrapper); auth from spa_utils
+  stores/           # Pinia stores (UI state only)
+  router/           # Vue Router configuration
+  plugins/          # Vuetify plugin configuration
+```
+
+**Note**: This SPA uses `@mentor-forge/mentorhub_spa_utils` **0.5.5** for reusable components, composables, and utilities. See the [mentorhub_spa_utils README](../mentorhub_spa_utils/README.md) for complete documentation.
+
+## Key Implementation Patterns
+
+### Authentication
+- JWT tokens stored in localStorage (`access_token`, `token_expires_at`)
+- Auth (`useAuth`, `redirectToIdpLogin`, `bootstrapAuthFromUrl`) from `@mentor-forge/mentorhub_spa_utils`; see `src/initAuth.ts`
+- Sign-in uses IdP / URL hash (`bootstrapAuthFromUrl` from spa_utils); APIs are not used as a login surface
+- Router guards protect routes requiring authentication
+
+### API Client
+- Located in `src/api/client.ts`
+- All API calls include JWT token from localStorage
+- Error handling via `ApiError` class; 401 triggers IdP redirect
+- Type-safe with TypeScript interfaces in `src/api/types.ts`
+
+### Default Landing
+- Authenticated users land on `/discovery` — a CardGrid-ready stub for F-DS01
+- Admin users retain `/admin` (spa_utils `AdminPage`)
+
+## Testing
+
+### Unit Tests
+- Uses Vitest for unit testing
+- Run tests: `npm run test:unit`
+- Coverage report: `npm run test:coverage`
+
+### E2E Tests
+- Uses Cypress for end-to-end testing
+- Run tests: `npm run cypress` (interactive) or `npm run cypress:run` (headless)
+
+## Automation Support
+
+All interactive elements in this SPA include `data-automation-id` attributes following the `{domain}-{page}-{element}` naming convention.
+
+## CI
+
+`.github/workflows/docker-push.yml` builds and pushes the container image. Registry credentials and dependency policy for your org live in SRE / standards docs, not in this README.
+
+## Configuration
+- Runtime configuration available at `/api/config` endpoint
+- Docker container uses `API_HOST` and `API_PORT` environment variables for API proxy configuration
+- Container listens on port 80 internally; map host port **8398** to container port 80
+- Dev server: `http://localhost:8398`; discovery API proxy target: `http://localhost:8397`
