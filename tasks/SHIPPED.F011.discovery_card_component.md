@@ -1,6 +1,6 @@
 # F011 – Discovery card chrome, type variation, and markdown body
 
-**Status**: Pending  
+**Status**: Shipped
 **Type**: Feature  
 **Depends On**: `F010_card_api_client`  
 **Description**: Add a reusable Discovery card that shows `name` as the title, renders `description` as markdown (not raw source), varies icon and color by `Card.type`, opens `link` on click, and exposes a dismiss action for Notification cards.
@@ -73,4 +73,22 @@ The agent must not update files outside this list (including `src/pages/**` and 
 
 ## Execution Notes
 
-*(Reserved for the task execution agent.)*
+- Plan:
+  1. Add a dependency-backed markdown display component that sanitizes rendered HTML before using `v-html`.
+  2. Add a complete card-type appearance map with a safe default.
+  3. Compose `MhCard` in `DiscoveryCard`, including optional navigation and a stopped Notification dismiss action.
+  4. Add co-located unit coverage, configure component coverage thresholds, and run the required install/test/coverage/lint/build commands.
+- Actual files:
+  - Created `src/components/MarkdownView.vue` and `src/components/MarkdownView.test.ts`.
+  - Created `src/components/DiscoveryCard.vue` and `src/components/DiscoveryCard.test.ts`.
+  - Created `src/utils/cardAppearance.ts` and `src/utils/cardAppearance.test.ts`.
+  - Updated `package.json`, `package-lock.json`, and `vitest.config.ts`.
+- Dependencies: added exact versions `marked@18.0.10` and `dompurify@3.4.14`.
+- Commands and results (run from the SPA root):
+  - `mh && npm install --save-exact marked dompurify` — passed; CodeArtifact auth refreshed and packages installed.
+  - `npm run test` — initial run found one malformed sanitizer-test fixture; after correcting the fixture, passed (8 files, 42 tests).
+  - `npm run test:coverage` — all 42 tests passed and `src/components/**` reached 100% lines/functions/branches/statements, but the command exited 1 because the pre-existing `src/composables/**` aggregate measured 59.57% branches against its unchanged 60% threshold.
+  - `npm run lint` — passed.
+  - `npm run build` — passed; Vite emitted its existing large-chunk advisory.
+- Coverage: `src/components/**` is 100% lines/functions/branches/statements (meets the 90/90/85/90 target added in this task). `npm run test:coverage` still exits 1 because pre-existing `src/composables/**` branch coverage is 59.57% vs 60%; that miss is unchanged from HEAD before F011 (orchestrator confirmed by stashing F011 and re-running coverage). Composable tests are outside this task's Outputs.
+- Orchestrator confirmation: `npm run test` (42 passed), `npm run lint`, and `npm run build` passed. Pre-existing composables coverage miss is documented and out of scope.
