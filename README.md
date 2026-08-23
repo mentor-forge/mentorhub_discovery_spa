@@ -5,7 +5,7 @@ Guidance for LLM Code Assistants - NOTE: We are currently pre-release. At this t
 
 UI Components should stick to Vuetify styling, and leverage re-usable input components from SPA utils when possible. If a spa_utils component need to be updated, the code can be copied to this repo, edited, tested, and migrated to the utils repo like new re-usable components are.
 
-Bootstrapped from `mentorhub_mentee_spa` (F-W18). Domain pages are stripped; authenticated landing is a Discovery stub ready for F-DS01 CardGrid work.
+Bootstrapped from `mentorhub_mentee_spa` (F-W18). The authenticated Discovery experience is a set of polymorphic card-grid routes backed by the Discovery API.
 
 ## Prerequisites
 - Mentor Hub [Developers Edition](https://github.com/mentor-forge/mentorhub/blob/main/CONTRIBUTING.md)
@@ -69,7 +69,7 @@ npm run container
 ```
 src/
   api/              # API client layer (types.ts, client.ts)
-  pages/            # Route-level components (Discovery stub, AdminPage)
+  pages/            # Route-level components (shared Discovery card grid, AdminPage)
   composables/      # App-specific composables (useConfig, useRoles wrapper); auth from spa_utils
   stores/           # Pinia stores (UI state only)
   router/           # Vue Router configuration
@@ -92,9 +92,14 @@ src/
 - Error handling via `ApiError` class; 401 triggers IdP redirect
 - Type-safe with TypeScript interfaces in `src/api/types.ts`
 
-### Default Landing
-- Authenticated users land on `/discovery` — a CardGrid-ready stub for F-DS01
-- Admin users retain `/admin` (spa_utils `AdminPage`)
+### Routes
+- `/` — composite Home card grid from `GET /api/cards`
+- `/resources` — learning Resource cards
+- `/paths` — learning Path cards
+- `/plans` — encounter Plan cards
+- `/admin` — existing configuration page for users with the `admin` role
+
+All four list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home grid can be dismissed.
 
 ## Testing
 

@@ -6,13 +6,27 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/discovery',
+      name: 'Home',
+      component: () => import('@/pages/DiscoveryHomePage.vue'),
+      meta: { requiresAuth: true, cardSource: 'home', title: 'Home' },
     },
     {
-      path: '/discovery',
-      name: 'Discovery',
+      path: '/resources',
+      name: 'Resources',
       component: () => import('@/pages/DiscoveryHomePage.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, cardSource: 'resources', title: 'Resources' },
+    },
+    {
+      path: '/paths',
+      name: 'Paths',
+      component: () => import('@/pages/DiscoveryHomePage.vue'),
+      meta: { requiresAuth: true, cardSource: 'paths', title: 'Paths' },
+    },
+    {
+      path: '/plans',
+      name: 'Plans',
+      component: () => import('@/pages/DiscoveryHomePage.vue'),
+      meta: { requiresAuth: true, cardSource: 'plans', title: 'Plans' },
     },
     {
       path: '/admin',
@@ -34,7 +48,7 @@ router.beforeEach((to, _from, next) => {
 
   const requiredRole = to.meta.requiresRole as string | undefined
   if (requiredRole && !hasStoredRole(requiredRole)) {
-    next({ name: 'Discovery' })
+    next({ name: 'Home' })
     return
   }
 

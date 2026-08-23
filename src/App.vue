@@ -17,10 +17,28 @@
     >
       <v-list density="compact" nav>
         <v-list-item
-          to="/discovery"
-          prepend-icon="mdi-compass"
-          title="Discovery"
-          data-automation-id="nav-discovery-link"
+          to="/"
+          prepend-icon="mdi-home"
+          title="Home"
+          data-automation-id="nav-home-link"
+        />
+        <v-list-item
+          to="/resources"
+          prepend-icon="mdi-book-open-page-variant"
+          title="Resources"
+          data-automation-id="nav-resources-link"
+        />
+        <v-list-item
+          to="/paths"
+          prepend-icon="mdi-map-marker-path"
+          title="Paths"
+          data-automation-id="nav-paths-link"
+        />
+        <v-list-item
+          to="/plans"
+          prepend-icon="mdi-clipboard-text"
+          title="Plans"
+          data-automation-id="nav-plans-link"
         />
       </v-list>
 

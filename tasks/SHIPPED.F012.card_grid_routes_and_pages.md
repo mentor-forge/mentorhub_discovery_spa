@@ -1,6 +1,6 @@
 # F012 – Card-grid routes, pages, and Notification dismiss wiring
 
-**Status**: Pending  
+**Status**: Shipped  
 **Type**: Feature  
 **Depends On**: `F011_discovery_card_component`  
 **Description**: Replace the Discovery stub with CardGrid list pages at `/`, `/resources`, `/paths`, and `/plans`, keep `/admin`, remove every other Vue route, and wire Notification dismiss to the API mutation. Do not add the deferred page-level new buttons.
@@ -85,4 +85,19 @@ Do not add deferred new-entity buttons. Do not remove `src/pages/AdminPage.vue`.
 
 ## Execution Notes
 
-*(Reserved for the task execution agent.)*
+- Plan:
+  - Add a shared TanStack Query composable for the four first-page card sources and notification dismissal, invalidating all card queries after a successful dismiss.
+  - Replace the landing stub with one route-meta-driven CardGrid page that provides loading, empty, error, card-link, and notification-dismiss behavior for `/`, `/resources`, `/paths`, and `/plans`.
+  - Restrict the router and drawer to the required routes/links, update unit and Cypress navigation expectations, and refresh the README route documentation.
+  - Run the full unit suite, lint/type-check, and production build from the SPA root.
+- Implemented:
+  - Added `useCards` with first-page (`offset=0`, `size=20`) queries for home, resources, paths, and plans plus notification dismissal and `['cards']` invalidation.
+  - Replaced the landing stub with a route-meta-driven CardGrid page and loading, empty, query-error, and dismiss-error states.
+  - Registered only `/`, `/resources`, `/paths`, `/plans`, and role-guarded `/admin`; updated the drawer, README, unit expectations, and Cypress navigation selectors.
+  - Kept `AdminPage.vue`; added no page-level create controls and did not adopt `PageFrame`.
+- Verification:
+  - `npm install` not needed; the existing install resolved all dependencies.
+  - `npm run test` — passed (9 files, 48 tests).
+  - `npm run lint` — passed.
+  - `npm run build` — passed (Vite emitted its existing large-chunk advisory).
+- Blockers: none.

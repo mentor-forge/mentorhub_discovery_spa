@@ -4,20 +4,21 @@ describe('Navigation Drawer', () => {
   })
 
   it('should open navigation drawer with hamburger menu', () => {
-    cy.visit('/discovery')
+    cy.visit('/')
     cy.get('[data-automation-id="nav-drawer-toggle"]').should('be.visible')
     cy.get('[data-automation-id="nav-drawer-toggle"]').click()
 
-    cy.get('[data-automation-id="nav-discovery-link"]').should('be.visible')
+    cy.get('[data-automation-id="nav-home-link"]').should('be.visible')
+    cy.get('[data-automation-id="nav-resources-link"]').should('be.visible')
+    cy.get('[data-automation-id="nav-paths-link"]').should('be.visible')
+    cy.get('[data-automation-id="nav-plans-link"]').should('be.visible')
   })
 
   it('should not show mentee domain links in drawer', () => {
-    cy.visit('/discovery')
+    cy.visit('/')
     cy.get('[data-automation-id="nav-drawer-toggle"]').click()
 
     cy.get('[data-automation-id="nav-journey-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-paths-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-resources-link"]').should('not.exist')
     cy.get('[data-automation-id="nav-journeys-list-link"]').should('not.exist')
     cy.get('[data-automation-id="nav-ratings-list-link"]').should('not.exist')
     cy.get('[data-automation-id="nav-notes-list-link"]').should('not.exist')
@@ -26,7 +27,7 @@ describe('Navigation Drawer', () => {
 
   it('should have admin and logout at bottom of drawer', () => {
     cy.login(['admin'])
-    cy.visit('/discovery')
+    cy.visit('/')
     cy.get('[data-automation-id="nav-drawer-toggle"]').click()
 
     cy.get('[data-automation-id="nav-admin-link"]').scrollIntoView().should('be.visible')
@@ -35,17 +36,17 @@ describe('Navigation Drawer', () => {
 
   it('should close drawer after navigation', () => {
     cy.login(['admin'])
-    cy.visit('/discovery')
+    cy.visit('/')
     cy.get('[data-automation-id="nav-drawer-toggle"]').click()
 
     cy.get('[data-automation-id="nav-admin-link"]').click()
 
     cy.wait(500)
-    cy.get('[data-automation-id="nav-discovery-link"]').should('not.be.visible')
+    cy.get('[data-automation-id="nav-home-link"]').should('not.be.visible')
   })
 
   it('should logout and redirect to IdP login', () => {
-    cy.visit('/discovery')
+    cy.visit('/')
     cy.get('[data-automation-id="nav-drawer-toggle"]').click()
     cy.get('[data-automation-id="nav-logout-link"]').scrollIntoView().click()
 
