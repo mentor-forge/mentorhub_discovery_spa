@@ -4,7 +4,7 @@ describe('Navigation Drawer', () => {
   })
 
   it('should open navigation drawer with hamburger menu', () => {
-    cy.visit('/')
+    cy.visit('/discovery/')
     cy.get('[data-automation-id="nav-drawer-toggle"]').should('be.visible')
     cy.get('[data-automation-id="nav-drawer-toggle"]').click()
 
@@ -15,7 +15,7 @@ describe('Navigation Drawer', () => {
   })
 
   it('should not show mentee domain links in drawer', () => {
-    cy.visit('/')
+    cy.visit('/discovery/')
     cy.get('[data-automation-id="nav-drawer-toggle"]').click()
 
     cy.get('[data-automation-id="nav-journey-link"]').should('not.exist')
@@ -27,7 +27,7 @@ describe('Navigation Drawer', () => {
 
   it('should have admin and logout at bottom of drawer', () => {
     cy.login(['admin'])
-    cy.visit('/')
+    cy.visit('/discovery/')
     cy.get('[data-automation-id="nav-drawer-toggle"]').click()
 
     cy.get('[data-automation-id="nav-admin-link"]').scrollIntoView().should('be.visible')
@@ -36,7 +36,7 @@ describe('Navigation Drawer', () => {
 
   it('should close drawer after navigation', () => {
     cy.login(['admin'])
-    cy.visit('/')
+    cy.visit('/discovery/')
     cy.get('[data-automation-id="nav-drawer-toggle"]').click()
 
     cy.get('[data-automation-id="nav-admin-link"]').click()
@@ -46,7 +46,7 @@ describe('Navigation Drawer', () => {
   })
 
   it('should logout and redirect to IdP login', () => {
-    cy.visit('/')
+    cy.visit('/discovery/')
     cy.get('[data-automation-id="nav-drawer-toggle"]').click()
     cy.get('[data-automation-id="nav-logout-link"]').scrollIntoView().click()
 

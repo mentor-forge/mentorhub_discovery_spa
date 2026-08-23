@@ -1,6 +1,6 @@
 # F014 – Vite `base` `/discovery/` and router `BASE_URL`
 
-**Status**: Pending  
+**Status**: Shipped
 **Type**: Feature  
 **Depends On**: `F013_card_grid_e2e_and_packaging`  
 **Description**: Mount the Vue app at Vite `base: '/discovery/'` with `createWebHistory(import.meta.env.BASE_URL)` so in-app URLs are `/discovery/...` (not `/discovery/discovery/...`). Keep Vue home at `/`. Do not change nginx or the API client in this task.
@@ -70,4 +70,10 @@ Do not change `nginx.conf.template`, `Dockerfile`, or `src/api/client.ts` in thi
 
 ## Execution Notes
 
-*(Reserved for the task execution agent.)*
+- Plan: configure Vite and Vue Router around the single `/discovery/` base, make runtime-config and logout URLs base-aware, and add a rewritten development proxy for `/discovery/api`.
+- Plan: update documented development and Cypress browser paths while leaving Vue route definitions and API intercept paths unchanged.
+- Plan: run unit tests, lint, and build, then inspect generated `index.html` for `/discovery/` URLs and any duplicated `/discovery/discovery`.
+- Implemented: set the Vite base, derived runtime-config and favicon URLs from the resolved base, added the rewritten `/discovery/api` development proxy, and initialized router history with `import.meta.env.BASE_URL`.
+- Implemented: made logout return to the base-aware app home, documented the prefixed dev URL, and moved Cypress visits/path assertions under `/discovery/` without changing API intercepts or Vue route paths.
+- Verification: `npm run test` passed (9 files, 48 tests); `npm run lint` passed; `npm run build` passed. Vite reported only its existing non-module runtime-config and large-chunk warnings.
+- Orchestrator confirmation: `npm run test`, `npm run lint`, and `npm run build` passed; built `index.html` uses `/discovery/` asset and runtime-config URLs with no `/discovery/discovery`.

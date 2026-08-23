@@ -30,7 +30,7 @@ npx cypress install
 ## package code for deployment
 npm run build 
 
-## run dev server, assumes api is running - captures command line
+## run dev server at http://localhost:8398/discovery/, assumes api is running
 npm run dev 
 
 ## type-check (lint)
@@ -124,4 +124,4 @@ All interactive elements in this SPA include `data-automation-id` attributes fol
 - Runtime configuration available at `/api/config` endpoint
 - Docker container uses `API_HOST` and `API_PORT` environment variables for API proxy configuration
 - Container listens on port 80 internally; map host port **8398** to container port 80
-- Dev server: `http://localhost:8398`; discovery API proxy target: `http://localhost:8397`
+- Dev server: `http://localhost:8398/discovery/`; discovery API proxy target: `http://localhost:8397`

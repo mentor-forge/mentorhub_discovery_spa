@@ -26,10 +26,10 @@ describe('Discovery card grids', () => {
       },
     ]).as('getHomeCards')
 
-    cy.visit('/')
+    cy.visit('/discovery/')
     cy.wait('@getHomeCards')
 
-    cy.location('pathname').should('eq', '/')
+    cy.location('pathname').should('eq', '/discovery/')
     cy.get('[data-automation-id="discovery-home-grid"]').should('be.visible')
     cy.get('[data-automation-id="discovery-card-resource-markdown-title-display"]')
       .should('contain.text', 'Vue Resource')
@@ -59,15 +59,15 @@ describe('Discovery card grids', () => {
     cy.intercept('GET', '**/api/cards/paths', []).as('getPathCards')
     cy.intercept('GET', '**/api/cards/plans', []).as('getPlanCards')
 
-    cy.visit('/resources')
+    cy.visit('/discovery/resources')
     cy.wait('@getResourceCards')
     cy.get('[data-automation-id="discovery-resources-empty"]').should('be.visible')
 
-    cy.visit('/paths')
+    cy.visit('/discovery/paths')
     cy.wait('@getPathCards')
     cy.get('[data-automation-id="discovery-paths-empty"]').should('be.visible')
 
-    cy.visit('/plans')
+    cy.visit('/discovery/plans')
     cy.wait('@getPlanCards')
     cy.get('[data-automation-id="discovery-plans-empty"]').should('be.visible')
   })
@@ -98,7 +98,7 @@ describe('Discovery card grids', () => {
       })
     }).as('dismissNotification')
 
-    cy.visit('/')
+    cy.visit('/discovery/')
     cy.wait('@getHomeCards')
     cy.get('[data-automation-id="discovery-card-notification-dismiss-dismiss-button"]')
       .click()
@@ -107,18 +107,18 @@ describe('Discovery card grids', () => {
       .should('eq', 'POST')
     cy.wait('@getHomeCards')
 
-    cy.location('pathname').should('eq', '/')
+    cy.location('pathname').should('eq', '/discovery/')
     cy.get('[data-automation-id="discovery-card-notification-dismiss"]').should('not.exist')
     cy.get('[data-automation-id="discovery-home-empty"]').should('be.visible')
   })
 
   it('loads admin for an admin login and keeps Admin and Logout in the local drawer', () => {
     cy.login(['admin'])
-    cy.visit('/')
+    cy.visit('/discovery/')
     cy.get('[data-automation-id="nav-drawer-toggle"]').click()
     cy.get('[data-automation-id="nav-admin-link"]').scrollIntoView().should('be.visible').click()
 
-    cy.location('pathname').should('eq', '/admin')
+    cy.location('pathname').should('eq', '/discovery/admin')
     cy.contains('Admin - Configuration').should('be.visible')
     cy.get('[data-automation-id="nav-drawer-toggle"]').click()
     cy.get('[data-automation-id="nav-admin-link"]').scrollIntoView().should('be.visible')

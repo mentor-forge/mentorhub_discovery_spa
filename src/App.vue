@@ -109,7 +109,7 @@ onMounted(async () => {
 })
 
 function handleLogout() {
-  const returnTo = `${window.location.origin}/`
+  const returnTo = `${window.location.origin}${import.meta.env.BASE_URL}`
   resetAppBarTitle()
   logout()
   drawer.value = false
