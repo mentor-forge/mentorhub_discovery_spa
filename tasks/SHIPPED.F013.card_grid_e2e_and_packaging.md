@@ -1,6 +1,6 @@
 # F013 – Card-grid Cypress coverage and packaging verification
 
-**Status**: Pending  
+**Status**: Shipped  
 **Type**: Feature  
 **Depends On**: `F012_card_grid_routes_and_pages`  
 **Description**: Add headless E2E coverage for the four CardGrid routes (rendered markdown, type variation, Notification dismiss, and `/admin`) and verify the packaged SPA.
@@ -71,4 +71,21 @@ The agent must not add page-level new buttons or extra Vue routes.
 
 ## Execution Notes
 
-*(Reserved for the task execution agent.)*
+- Plan:
+  - Add a Cypress card-grid spec that intercepts the four card endpoints with deterministic payloads.
+  - Cover the `/` landing grid, rendered markdown, distinct card-type appearances, Notification dismissal without link navigation, and empty states for the three typed list routes.
+  - Verify `/admin` and the existing local drawer through the existing navigation coverage, updating it only if a gap is found.
+  - Run unit tests, type-checking, build, container packaging, the full service stack, and headless Cypress; record every result here.
+- Implemented:
+  - Created `cypress/e2e/cards.cy.ts` with four scenarios covering the root landing grid, card names, rendered heading/strong markdown, Resource/Path color and icon variation, empty Resource/Path/Plan routes, Notification dismissal without link navigation, and admin route/drawer access.
+  - Used inline `cy.intercept` payloads rather than fixture files. `GET /api/cards` supplies Resource and Path cards for rendering/type checks. The dismiss scenario supplies a linked Notification, mutates the intercepted home list after `POST /api/notification/dismiss/notification-dismiss`, and verifies the invalidation refetch removes it. Typed card endpoints return empty arrays. `GET /api/config` returns an empty deterministic config for all scenarios.
+  - `cypress/e2e/navigation.cy.ts` required no changes; its existing `/` landing, Admin, Logout, and local-drawer coverage passed.
+- Command results (all run from the SPA root):
+  - `npm run test` — passed: 9 files, 48 tests.
+  - `npm run lint` — passed (`vue-tsc --noEmit`).
+  - `npm run build` — passed; Vite emitted only its existing large-chunk advisory.
+  - `npm run container` — passed; built `ghcr.io/mentor-forge/mentorhub_discovery_spa:latest`. Build output reported one high-severity npm audit item and Docker's JSON-form `CMD` recommendation; neither blocked packaging.
+  - `npm run service` — passed; recreated and started MongoDB, MongoDB API/SPA, Discovery API, Discovery SPA, and welcome containers.
+  - First `npm run cypress:run` — 8/9 tests passed; the new title assertion failed because Vuetify rendered harmless trailing whitespace.
+  - Final `npm run cypress:run` after making the title assertion whitespace-tolerant — passed: 2 specs, 9/9 tests (`cards.cy.ts` 4/4; `navigation.cy.ts` 5/5).
+- Orchestrator confirmation: `npm run test`, `npm run lint`, `npm run build` passed; `npm run cypress:run` against the already-running packaged stack passed 9/9.
