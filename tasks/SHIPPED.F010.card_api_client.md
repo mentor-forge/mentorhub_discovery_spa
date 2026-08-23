@@ -1,6 +1,6 @@
 # F010 – Card list and Notification dismiss API client
 
-**Status**: Pending  
+**Status**: Shipped
 **Type**: Feature  
 **Depends On**: none  
 **Description**: Align Discovery SPA types and the API client with the running Discovery API Card-list and Notification-dismiss contract so later tasks can load grids and dismiss Notification cards.
@@ -84,4 +84,26 @@ The agent must not update files outside this list.
 
 ## Execution Notes
 
-*(Reserved for the task execution agent.)*
+- Plan:
+  1. Fetch the definitive OpenAPI document from the running Discovery API and record its version and Card/Notification operations.
+  2. Align the API types and client methods with the live schemas, paths, pagination headers, and dismiss response.
+  3. Add focused unit coverage for all list methods, default/custom headers, authorization, response arrays, dismiss POST behavior, and existing 401 handling.
+  4. Run the required unit tests, lint, and build; record results and any follow-ups.
+- Live OpenAPI:
+  - Fetch succeeded from `http://localhost:8397/docs/openapi.yaml`; the API was already running.
+  - `info.version`: `0.2.0`.
+  - Card paths: `GET /api/cards`, `GET /api/cards/resources`, `GET /api/cards/paths`, and `GET /api/cards/plans`.
+  - Dismiss path: `POST /api/notification/dismiss/{notification_id}` with no request body and a `Notification` response.
+  - List operations use `offset` and `size` request headers with defaults `0` and `20`; successful responses are bare `Card[]` arrays.
+- Implementation:
+  - Added live-spec `Card`, `CardType`, `Breadcrumb`, and `Notification` types.
+  - Added typed home/resource/path/plan list methods with authorization and pagination headers.
+  - Added typed Notification dismiss support and unit coverage for URLs, methods, authorization, default/custom pagination headers, array responses, no-body POST behavior, and existing 401 handling.
+- Commands and results:
+  - `curl -fsS -X GET "http://localhost:8397/docs/openapi.yaml"` — passed.
+  - Live OpenAPI operation inspection via `curl` and Python — passed.
+  - `npm run test` — passed: 5 test files, 23 tests.
+  - `npm run lint` — passed.
+  - `npm run build` — passed; Vite emitted its existing chunk-size advisory.
+  - `mh` / `npm install` — not run because dependencies and the lockfile did not change.
+- Follow-ups: None for F010. Task is ready for orchestrator confirmation and commit; status intentionally remains `Running`.
