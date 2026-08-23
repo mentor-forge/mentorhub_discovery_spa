@@ -12,7 +12,7 @@ Now orchestrate all Pending Tasks as outlined below. Use an **orchestration agen
    - **Task Selection**: Select only `PENDING.*` tasks.
    - **Execution order**: Review all PENDING tasks and order dependencies first.
    - **Concurrent** all tasks should be executed serially
-2. **For each task**, the orchestrator launches a new agent with:
+2. **For each task**, the orchestrator selects an appropriate model, many tasks will not need high reasoning models. Never use GROK models. Then, launch a new agent with:
    - The task file path
    - Any outputs from prior tasks (e.g. "L010 complete; Profile schema updated in openapi.yaml")
 3. **Sub-agent** executes only that task: read context, implement, test, update task notes.
@@ -56,3 +56,4 @@ The steps below apply to the agent that executes a task.
 
 3. **Completion and documentation**
    - After successful testing, update **Execution Notes** with summary and test results.
+   - The sub agent does not need to commit changes, that will be done by the orchestration agent.

@@ -9,6 +9,7 @@ This folder contains coding tasks that an orchestration agent can execute, based
   - In-repo: `README.md`, `docs/openapi.yaml`, `src/...`, `test/...`, `tasks/...`
 
 - **Context** Before creating any task files you should review the following files for context:
+- ../mentorhub/DeveloperEdition/standards/ArchitecturePrinciples.md
 - ../mentorhub/DeveloperEdition/standards/spa_standards.md
 - ../mentorhub_spa_utils/README.md
 - ./README.md
@@ -39,8 +40,9 @@ Each task file must contain the following sections under H1 and H2 headings.
 
 - Under a **Context** H2 header:
   - A list of context files. This list should always include:
+    - `../mentorhub/DeveloperEdition/standards/ArchitecturePrinciples.md`
     - `../mentorhub/DeveloperEdition/standards/spa_standards.md`
-    - `tasks/README_API.md`
+    - `../mentorhub_spa_utils/README.md`
     - `README.md`
   - Any other input files for the execution of the task.
   - `AS_NEEDED` tasks may include a **Parameters (edit before running)** subsection here for values to customize before promoting to `Pending`.
@@ -61,7 +63,7 @@ Each task file must contain the following sections under H1 and H2 headings.
     - `npm run api` — run backing API
     - `npm run dev` — run dev server locally (for manual or E2E verification)
     - `npm run cypress:run` — headless end-to-end tests against a running API (long running)
-  - Should always include the **Packaging verification** step:
+  - Should include the **Packaging verification** step on at least the last task in a set:
     - `npm run container` — build the API container image
     - `npm run service` — run db + API + SPA containers
     - `npm run cypress:run` — headless end-to-end tests (long running)
@@ -104,12 +106,3 @@ Start the backing API if needed (`npm run api`), then fetch the latest JSON sche
 curl -X GET "http://localhost:8397/docs/openapi.yaml"
 ```
 
-## Sample task file
-
-For a complete example of a well‑formed `Run as needed` task, see:
-
-- `AS_NEEDED.T998.openapi_updates.md`
-
-## Workshop context
-
-- ../mentorhub/Workshops/discovery_journey_issues.md
