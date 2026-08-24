@@ -80,7 +80,7 @@ src/
   plugins/          # Vuetify plugin configuration
 ```
 
-**Note**: This SPA uses `@mentor-forge/mentorhub_spa_utils` **0.5.5** for reusable components, composables, and utilities. See the [mentorhub_spa_utils README](../mentorhub_spa_utils/README.md) for complete documentation.
+**Note**: This SPA uses `@mentor-forge/mentorhub_spa_utils` **1.0.0** for reusable components, composables, and utilities. See the [mentorhub_spa_utils README](../mentorhub_spa_utils/README.md) for complete documentation.
 
 ## Key Implementation Patterns
 

@@ -1,6 +1,6 @@
 # F017 – Pin `@mentor-forge/mentorhub_spa_utils@1.0.0`
 
-**Status**: Pending  
+**Status**: Shipped  
 **Type**: Feature  
 **Depends On**: `F016_prefixed_api_client_e2e_and_packaging`  
 **Description**: This repo owns the Discovery SPA **1.0.0 pin**. Bump `@mentor-forge/mentorhub_spa_utils` from `0.5.x` to **`1.0.0`**, refresh the lockfile from CodeArtifact, and fix any compile/test breakage from removed infinite-scroll exports. Do not adopt `PageFrame` or add catalog routes in this task.
@@ -60,4 +60,12 @@ Do not change `src/App.vue` chrome to `PageFrame` in this task.
 
 ## Execution Notes
 
-*(Reserved for the task execution agent.)*
+- Plan: authenticate to CodeArtifact with `mh` and verify that spa_utils `1.0.0` is published. If available, pin the exact dependency, refresh the lockfile with dev dependencies, update the README version note, verify no removed infinite-scroll APIs are imported, and run the required version/test/lint/build checks.
+- External prerequisite verified: after `mh`, `npm view @mentor-forge/mentorhub_spa_utils version` returned `1.0.0`.
+- Updated `package.json` and `package-lock.json` to exact `1.0.0`; the lockfile resolves the `1.0.0` tarball from CodeArtifact. Updated the README dependency note. No `useInfiniteScroll` or `InfiniteScroll*` imports were present, so no `src/**` changes were needed.
+- Verification:
+  - `npm install --include=dev` — passed.
+  - `npm ls @mentor-forge/mentorhub_spa_utils` — confirmed `@mentor-forge/mentorhub_spa_utils@1.0.0`.
+  - `npm run test` — passed (9 files, 48 tests).
+  - `npm run lint` — passed.
+- Orchestrator confirmation: `npm ls` reports `@mentor-forge/mentorhub_spa_utils@1.0.0`; `npm run test`, `npm run lint`, and `npm run build` passed.
