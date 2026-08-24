@@ -11,23 +11,12 @@ import {
 const config = ref<RuntimeEditorConfig | null>(null)
 const authenticated = ref(false)
 const loadConfig = vi.fn()
-const afterEach = vi.fn()
 
 vi.mock('@/composables/useConfig', () => ({
   useConfig: () => ({
     config: computed(() => config.value),
     loadConfig,
   }),
-}))
-
-vi.mock('@/composables/useRoles', () => ({
-  useRoles: () => ({
-    hasRole: () => computed(() => false),
-  }),
-}))
-
-vi.mock('vue-router', () => ({
-  useRouter: () => ({ afterEach }),
 }))
 
 vi.mock('@tanstack/vue-query', () => ({
@@ -41,41 +30,40 @@ vi.mock('@mentor-forge/mentorhub_spa_utils', async (importOriginal) => {
     provideEditorConfig: vi.fn(),
     useAuth: () => ({
       isAuthenticated: computed(() => authenticated.value),
-      logout: vi.fn(),
     }),
   }
 })
+
+function mountApp() {
+  return mount(App, {
+    shallow: true,
+    global: {
+      stubs: {
+        RouterView: {
+          template: '<div data-testid="router-view" />',
+        },
+        VApp: {
+          template: '<div><slot /></div>',
+        },
+        PageFrame: {
+          props: ['pageTitle'],
+          template: '<main :data-page-title="pageTitle"><slot /></main>',
+        },
+      },
+    },
+  })
+}
 
 describe('App editor config boundary', () => {
   beforeEach(() => {
     config.value = null
     authenticated.value = false
     loadConfig.mockReset()
-    afterEach.mockReset()
     vi.mocked(provideEditorConfig).mockReset()
   })
 
   it('provides the reactive runtime config and leaves missing or unknown enumerators empty', async () => {
-    mount(App, {
-      shallow: true,
-      global: {
-        stubs: {
-          RouterView: true,
-          VApp: { template: '<div><slot /></div>' },
-          VAppBar: true,
-          VAppBarNavIcon: true,
-          VAppBarTitle: true,
-          VContainer: true,
-          VDivider: true,
-          VList: { template: '<div><slot /></div>' },
-          VListItem: true,
-          VMain: true,
-          VNavigationDrawer: {
-            template: '<aside><slot /><slot name="append" /></aside>',
-          },
-        },
-      },
-    })
+    mountApp()
 
     expect(provideEditorConfig).toHaveBeenCalledOnce()
     const providedConfig = vi.mocked(provideEditorConfig).mock.calls[0][0]
@@ -103,34 +91,10 @@ describe('App editor config boundary', () => {
     ])
   })
 
-  it('renders the four card-list navigation links for authenticated users', () => {
-    authenticated.value = true
-    const wrapper = mount(App, {
-      shallow: true,
-      global: {
-        stubs: {
-          RouterView: true,
-          VApp: { template: '<div><slot /></div>' },
-          VAppBar: true,
-          VAppBarNavIcon: true,
-          VAppBarTitle: true,
-          VContainer: true,
-          VDivider: true,
-          VList: { template: '<div><slot /></div>' },
-          VListItem: true,
-          VMain: true,
-          VNavigationDrawer: {
-            template: '<aside><slot /><slot name="append" /></aside>',
-          },
-        },
-      },
-    })
+  it('wraps routed content in the shared Discovery page frame', () => {
+    const wrapper = mountApp()
 
-    expect(wrapper.get('[data-automation-id="nav-home-link"]').attributes('to')).toBe('/')
-    expect(wrapper.get('[data-automation-id="nav-resources-link"]').attributes('to'))
-      .toBe('/resources')
-    expect(wrapper.get('[data-automation-id="nav-paths-link"]').attributes('to')).toBe('/paths')
-    expect(wrapper.get('[data-automation-id="nav-plans-link"]').attributes('to')).toBe('/plans')
-    expect(wrapper.find('[data-automation-id="nav-discovery-link"]').exists()).toBe(false)
+    expect(wrapper.get('main').attributes('data-page-title')).toBe('Discovery')
+    expect(wrapper.get('[data-testid="router-view"]').exists()).toBe(true)
   })
 })

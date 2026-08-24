@@ -1,6 +1,6 @@
 # F019 – Adopt spa_utils `PageFrame` and remove local nav chrome
 
-**Status**: Pending  
+**Status**: Shipped
 **Type**: Feature  
 **Depends On**: `F018_catalog_card_list_routes`  
 **Description**: Replace local app-bar, hamburger, and logout with imported `PageFrame`. Keep a single host `v-app`, wrap `router-view` in `PageFrame`, and delete duplicate Discovery drawer markup that mirrors the universal catalog.
@@ -76,4 +76,20 @@ Do not pass disallowed `PageFrame` props. Do not remove CardGrid list pages.
 
 ## Execution Notes
 
-*(Reserved for the task execution agent.)*
+- Plan:
+  - Replace the local app bar, drawer, route links, and logout handler in `src/App.vue` with the root-exported `PageFrame`, passing only the required `pageTitle`.
+  - Preserve the single host `v-app`, router view, authenticated runtime editor-config loading, and existing auth bootstrap.
+  - Update `src/App.test.ts` to stub and assert the `PageFrame` boundary while retaining the reactive editor-config coverage.
+  - Document `PageFrame` as the shared navigation shell in `README.md`.
+  - Run `npm run test`, `npm run lint`, and `npm run build`.
+- Implemented:
+  - Replaced Discovery's local app bar, drawer, Vue Router nav links, admin link, and logout handler with `PageFrame` from the spa_utils package root.
+  - Passed the static required prop `page-title="Discovery"` only; no `customerName` or disallowed navigation configuration props are supplied.
+  - Preserved the single `v-app`, routed list-page content, authenticated editor-config loading, and existing IdP URL bootstrap.
+  - Updated the App unit test to stub the shared frame and verify its title and routed default-slot content. No Discovery-only nav config module existed to delete.
+  - Updated the README to identify spa_utils 1.0.0 `PageFrame` as the shared navigation shell.
+- Verification:
+  - `npm run test` — passed (9 files, 54 tests).
+  - `npm run lint` — passed.
+  - `npm run build` — passed; Vite retained its existing runtime-config script and chunk-size warnings.
+- Orchestrator confirmation: `npm run test` (54 passed), `npm run lint`, and `npm run build` passed. `App.vue` is a single `v-app` wrapping `PageFrame page-title="Discovery"` and `router-view`.

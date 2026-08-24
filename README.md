@@ -90,6 +90,10 @@ src/
 - Sign-in uses IdP / URL hash (`bootstrapAuthFromUrl` from spa_utils); APIs are not used as a login surface
 - Router guards protect routes requiring authentication
 
+### Layout and navigation
+- The root layout uses `PageFrame` from `@mentor-forge/mentorhub_spa_utils` 1.0.0 as the shared app bar, role-gated navigation drawer, profile link, and logout shell.
+- Discovery passes `pageTitle="Discovery"` and renders its router view in the default slot. The universal navigation catalog and cross-SPA links are owned by spa_utils, not configured locally.
+
 ### API Client
 - Located in `src/api/client.ts`
 - Builds its API root from Vite's base URL, so app requests use `/discovery/api/`
