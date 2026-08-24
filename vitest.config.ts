@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
+  base: '/discovery/',
   plugins: [vue()],
   test: {
     server: {

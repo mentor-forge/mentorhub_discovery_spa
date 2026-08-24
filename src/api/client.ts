@@ -1,7 +1,7 @@
 import type { Card, ConfigResponse, Error, Notification } from './types'
 import { redirectToIdpLogin, useAuth } from '@mentor-forge/mentorhub_spa_utils'
 
-const API_BASE = '/api'
+const API_BASE = `${import.meta.env.BASE_URL}api`
 const DEFAULT_OFFSET = 0
 const DEFAULT_SIZE = 20
 

@@ -7,11 +7,11 @@ const emptyConfig = {
 describe('Discovery card grids', () => {
   beforeEach(() => {
     cy.login()
-    cy.intercept('GET', '**/api/config', emptyConfig)
+    cy.intercept('GET', '**/discovery/api/config', emptyConfig)
   })
 
   it('uses the root landing page and renders card names, markdown, and type appearances', () => {
-    cy.intercept('GET', '**/api/cards', [
+    cy.intercept('GET', '**/discovery/api/cards', [
       {
         _id: 'resource-markdown',
         name: 'Vue Resource',
@@ -55,9 +55,9 @@ describe('Discovery card grids', () => {
   })
 
   it('loads resources, paths, and plans and accepts their empty states', () => {
-    cy.intercept('GET', '**/api/cards/resources', []).as('getResourceCards')
-    cy.intercept('GET', '**/api/cards/paths', []).as('getPathCards')
-    cy.intercept('GET', '**/api/cards/plans', []).as('getPlanCards')
+    cy.intercept('GET', '**/discovery/api/cards/resources', []).as('getResourceCards')
+    cy.intercept('GET', '**/discovery/api/cards/paths', []).as('getPathCards')
+    cy.intercept('GET', '**/discovery/api/cards/plans', []).as('getPlanCards')
 
     cy.visit('/discovery/resources')
     cy.wait('@getResourceCards')
@@ -83,10 +83,10 @@ describe('Discovery card grids', () => {
       },
     ]
 
-    cy.intercept('GET', '**/api/cards', (request) => {
+    cy.intercept('GET', '**/discovery/api/cards', (request) => {
       request.reply(homeCards)
     }).as('getHomeCards')
-    cy.intercept('POST', '**/api/notification/dismiss/notification-dismiss', (request) => {
+    cy.intercept('POST', '**/discovery/api/notification/dismiss/notification-dismiss', (request) => {
       homeCards = []
       request.reply({
         statusCode: 200,

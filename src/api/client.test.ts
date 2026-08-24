@@ -68,7 +68,7 @@ describe('API Client', () => {
 
       expect(result).toEqual(mockConfig)
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/config',
+        '/discovery/api/config',
         expect.objectContaining({
           headers: expect.objectContaining({
             'Authorization': 'Bearer test-token'
@@ -94,10 +94,10 @@ describe('API Client', () => {
     })
 
     it.each([
-      ['home', '/api/cards', () => api.getHomeCards()],
-      ['resources', '/api/cards/resources', () => api.getResourceCards()],
-      ['paths', '/api/cards/paths', () => api.getPathCards()],
-      ['plans', '/api/cards/plans', () => api.getPlanCards()],
+      ['home', '/discovery/api/cards', () => api.getHomeCards()],
+      ['resources', '/discovery/api/cards/resources', () => api.getResourceCards()],
+      ['paths', '/discovery/api/cards/paths', () => api.getPathCards()],
+      ['plans', '/discovery/api/cards/plans', () => api.getPlanCards()],
     ])('should fetch %s cards with default pagination headers', async (_, url, call) => {
       mockFetch.mockResolvedValueOnce(jsonResponse(cards))
 
@@ -121,7 +121,7 @@ describe('API Client', () => {
       await api.getResourceCards(40, 100)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/cards/resources',
+        '/discovery/api/cards/resources',
         expect.objectContaining({
           headers: expect.objectContaining({
             offset: '40',
@@ -153,7 +153,7 @@ describe('API Client', () => {
 
       expect(result).toEqual(notification)
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/notification/dismiss/665f1c2a9b1e4c0a1b2c3d4e',
+        '/discovery/api/notification/dismiss/665f1c2a9b1e4c0a1b2c3d4e',
         {
           method: 'POST',
           headers: {

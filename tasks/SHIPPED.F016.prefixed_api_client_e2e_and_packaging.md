@@ -1,6 +1,6 @@
 # F016 – Prefixed API client, Cypress, and packaging
 
-**Status**: Pending  
+**Status**: Shipped
 **Type**: Feature  
 **Depends On**: `F015_nginx_discovery_prefix`  
 **Description**: Point the SPA API client at `{BASE_URL}api` so calls from `/discovery/` hit SPA nginx `location /discovery/api/`, update Cypress intercepts/visits, and verify lint, unit tests, Cypress, and the packaged container.
@@ -75,4 +75,31 @@ Do **not** pin spa_utils 1.0.0, adopt `PageFrame`, or rewrite drawer selectors h
 
 ## Execution Notes
 
-*(Reserved for the task execution agent.)*
+- Plan: derive the API root from Vite's `import.meta.env.BASE_URL`, configure Vitest
+  with the production `/discovery/` base, and update unit/Cypress URL expectations
+  plus README API-path documentation.
+- Plan: run unit tests, type-check lint, build, and Cypress against the service;
+  rebuild the container and repeat service/Cypress verification, then spot-check
+  direct and welcome-prefixed routes and confirm no `/discovery/discovery`.
+- Implemented: `API_BASE` is now `${import.meta.env.BASE_URL}api`, which resolves
+  to `/discovery/api` for this app. Vitest uses `base: '/discovery/'`; unit and
+  Cypress expectations use `/discovery/api/...`; README documents the app-facing
+  prefixed API path.
+- Verification:
+  - `npm run test` passed: 9 files, 48 tests.
+  - `npm run lint` passed.
+  - `npm run build` passed. Vite emitted the existing runtime-config and large
+    chunk warnings; generated URLs are `/discovery/...`.
+  - Source/Cypress and built-output searches found no `/discovery/discovery`.
+  - `npm run service` succeeded before packaging. The first `npm run cypress:run`
+    used the pre-F016 local image and failed three card intercept waits because
+    that image still requested `/api/...`; navigation passed 5/5.
+  - Packaging sequence passed: `npm run container`, `npm run service`, then
+    `npm run cypress:run` with 9/9 tests passing.
+  - Direct spot-check `http://localhost:8398/discovery/` returned the packaged
+    SPA (200), and resources/paths/plans/admin history routes returned 200.
+  - `GET http://localhost:8398/discovery/api/config` returned API JSON with
+    `401 UNAUTHORIZED` and `Content-Type: application/json`, not `index.html`.
+  - Welcome was running; `http://localhost:8080/discovery/` returned the same
+    packaged SPA shell and asset hash as the direct route (200).
+- Orchestrator confirmation: `npm run test`, `npm run lint`, `npm run build` passed; Cypress 9/9 against the packaged stack; `/discovery/` is the SPA and `/discovery/api/config` returns 401 JSON.

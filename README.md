@@ -92,12 +92,14 @@ src/
 
 ### API Client
 - Located in `src/api/client.ts`
+- Builds its API root from Vite's base URL, so app requests use `/discovery/api/`
+  through the SPA nginx proxy
 - All API calls include JWT token from localStorage
 - Error handling via `ApiError` class; 401 triggers IdP redirect
 - Type-safe with TypeScript interfaces in `src/api/types.ts`
 
 ### Routes
-- `/` — composite Home card grid from `GET /api/cards`
+- `/` — composite Home card grid from `GET /discovery/api/cards`
 - `/resources` — learning Resource cards
 - `/paths` — learning Path cards
 - `/plans` — encounter Plan cards
@@ -125,7 +127,7 @@ All interactive elements in this SPA include `data-automation-id` attributes fol
 `.github/workflows/docker-push.yml` builds and pushes the container image. Registry credentials and dependency policy for your org live in SRE / standards docs, not in this README.
 
 ## Configuration
-- Runtime configuration available at `/api/config` endpoint
+- Runtime configuration for the app is available at `/discovery/api/config`
 - Docker container uses `API_HOST` and `API_PORT` environment variables for API proxy configuration
 - Container listens on port 80 internally; map host port **8398** to container port 80
 - Dev server: `http://localhost:8398/discovery/`; discovery API proxy target: `http://localhost:8397`
