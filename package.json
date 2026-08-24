@@ -20,7 +20,7 @@
     "service": "mh down && mh up discovery && npm run open",
     "container": "sh scripts/docker-build.sh",
     "push": "docker push ghcr.io/mentor-forge/mentorhub_discovery_spa:latest",
-    "open": "open -a 'Google Chrome' 'http://localhost:8398' || google-chrome 'http://localhost:8398' || exg-open 'localhost:8398'",
+    "open": "open -a 'Google Chrome' 'http://localhost:8398/discovery/' || google-chrome 'http://localhost:8398/discovery/' || exg-open 'localhost:8398/discovery/'",
     "build-publish": "npm install --include=dev && npm run container && npm run push",
     "build-package": "npm install --include=dev && npx cypress install && npm run container",
     "publish-package": "npm run push",

@@ -1,6 +1,6 @@
 # F015 – SPA nginx prefix `/discovery/` and runtime-config
 
-**Status**: Pending  
+**Status**: Shipped
 **Type**: Feature  
 **Depends On**: `F014_vite_base_and_router_prefix`  
 **Description**: Teach container nginx to serve the Vite `base` `/discovery/` prefix (assets, SPA fallback, prefixed API proxy, prefixed `runtime-config.js`) while keeping direct-port `/api/` and `/runtime-config.js` for debugging.
@@ -78,4 +78,26 @@ Do not change `src/api/client.ts` in this task.
 
 ## Execution Notes
 
-*(Reserved for the task execution agent.)*
+- Plan:
+  - Add exact root redirect, prefixed API/runtime-config handling, and a `/discovery/` SPA fallback that maps to the existing dist root while preserving direct debug and health locations.
+  - Update the documented/opened container URLs to `/discovery/`; keep the single image and existing runtime-config generation.
+  - Run lint, unit tests, build, container build, service startup, and the required direct-port HTTP spot-checks; record results below.
+- Implementation:
+  - Added `/discovery/api/` with the same proxy target and headers as direct-debug `/api/`.
+  - Added `/discovery/` dist-root mapping/history fallback, exact `/` redirect, and exact prefixed runtime-config handling. Kept `/health`, `/api/`, `/runtime-config.js`, and the single generated runtime-config file/image.
+  - Preserved immutable caching for prefixed static assets while both exact runtime-config URLs remain `no-store`.
+  - Updated the README access/proxy boundaries and the `npm run open` URL. No Dockerfile change was needed.
+- Verification (2026-08-23):
+  - `npm run lint`: passed.
+  - `npm run test`: passed, 9 files / 48 tests.
+  - `npm run build`: passed. Vite retained its existing non-module runtime-config and large-chunk warnings.
+  - `npm run container`: passed against the final nginx configuration. Docker reported its existing JSON-form `CMD` recommendation; dependency install reported one high-severity audit finding.
+  - `npm run service`: passed; Discovery stack restarted and opened `http://localhost:8398/discovery/`.
+  - `GET http://localhost:8398/`: `302`, relative `Location: /discovery/`.
+  - `GET http://localhost:8398/discovery/`: `200 text/html`, Discovery app shell with `/discovery/` runtime-config/assets.
+  - `GET http://localhost:8398/discovery/runtime-config.js`: `200 application/javascript`, `Cache-Control: no-store`, contains `IDP_LOGIN_URI: 'http://m5max.tailb0d293.ts.net:8080/login.html'`.
+  - `GET http://localhost:8398/api/` and `/discovery/api/`: both reached Discovery API and returned its identical `404` 207-byte response for the undefined API root (confirmed against direct `http://localhost:8397/api/`); neither returned the SPA shell.
+  - `GET http://localhost:8398/discovery/resources`: `200 text/html` via Vue history fallback; `/health` returned `healthy`.
+  - Prefixed JS asset returned `200` with `Cache-Control: public, immutable`.
+  - Optional welcome check `GET http://localhost:8080/discovery/`: `200 text/html`; body checksum matched the direct Discovery app shell.
+- Orchestrator confirmation: curl spot-checks passed against the running packaged stack — `/` 302 to `/discovery/`, `/discovery/` 200 SPA, prefixed runtime-config 200 `no-store` with `IDP_LOGIN_URI`, `/api/config` and `/discovery/api/config` both 401 JSON from the API, welcome `:8080/discovery/` 200 matching the SPA shell.

@@ -18,6 +18,10 @@ Bootstrapped from `mentorhub_mentee_spa` (F-W18). The authenticated Discovery ex
 npm run service 
 ```
 
+Open the Discovery SPA through the Developer Edition welcome origin at
+`http://localhost:8080/discovery/`. For direct container debugging, use
+`http://localhost:8398/discovery/`.
+
 ## Developer Commands
 
 ```sh
@@ -125,3 +129,5 @@ All interactive elements in this SPA include `data-automation-id` attributes fol
 - Docker container uses `API_HOST` and `API_PORT` environment variables for API proxy configuration
 - Container listens on port 80 internally; map host port **8398** to container port 80
 - Dev server: `http://localhost:8398/discovery/`; discovery API proxy target: `http://localhost:8397`
+- The SPA nginx proxies both `/discovery/api/` (welcome/prefixed traffic) and `/api/` (direct-port debugging) to the Discovery API.
+- This container serves only the Discovery journey. It is not an edge router and does not proxy other journey SPAs or their APIs.
