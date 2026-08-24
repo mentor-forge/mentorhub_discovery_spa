@@ -54,22 +54,87 @@ describe('Discovery card grids', () => {
       .should('have.attr', 'aria-label', 'Path card')
   })
 
-  it('loads resources, paths, and plans and accepts their empty states', () => {
-    cy.intercept('GET', '**/discovery/api/cards/resources', []).as('getResourceCards')
-    cy.intercept('GET', '**/discovery/api/cards/paths', []).as('getPathCards')
-    cy.intercept('GET', '**/discovery/api/cards/plans', []).as('getPlanCards')
+  it('visits every CardGrid route and accepts empty states', () => {
+    const routes = [
+      { source: 'home', path: '/discovery/', endpoint: 'cards' },
+      { source: 'members', path: '/discovery/members/', endpoint: 'cards/members' },
+      { source: 'resources', path: '/discovery/resources', endpoint: 'cards/resources' },
+      { source: 'paths', path: '/discovery/paths', endpoint: 'cards/paths' },
+      { source: 'plans', path: '/discovery/plans', endpoint: 'cards/plans' },
+      { source: 'products', path: '/discovery/products', endpoint: 'cards/products' },
+      {
+        source: 'notifications',
+        path: '/discovery/notifications',
+        endpoint: 'cards/notifications',
+      },
+    ]
 
-    cy.visit('/discovery/resources')
-    cy.wait('@getResourceCards')
-    cy.get('[data-automation-id="discovery-resources-empty"]').should('be.visible')
+    routes.forEach(({ source, path, endpoint }) => {
+      cy.intercept('GET', `**/discovery/api/${endpoint}`, []).as(`${source}Cards`)
+      cy.visit(path)
+      cy.wait(`@${source}Cards`)
+      cy.location('pathname').should('eq', path)
+      cy.url().should('not.include', '/discovery/discovery')
+      cy.get(`[data-automation-id="discovery-${source}-empty"]`).should('be.visible')
+    })
+  })
 
-    cy.visit('/discovery/paths')
-    cy.wait('@getPathCards')
-    cy.get('[data-automation-id="discovery-paths-empty"]').should('be.visible')
+  it('opens cross-journey card targets through :8080 and preserves external links', () => {
+    cy.intercept('GET', '**/discovery/api/cards', [
+      {
+        _id: 'customer-target',
+        name: 'Customer member',
+        link: '/customer/members/customer-target',
+        type: 'Member',
+      },
+      {
+        _id: 'admin-target',
+        name: 'Admin product',
+        link: '/admin/products/admin-target',
+        type: 'Resource',
+      },
+      {
+        _id: 'mentor-target',
+        name: 'Mentor path',
+        link: '/mentor/paths/mentor-target',
+        type: 'Path',
+      },
+      {
+        _id: 'mentee-target',
+        name: 'Mentee event',
+        link: '/mentee/events/mentee-target',
+        type: 'Event',
+      },
+      {
+        _id: 'external-target',
+        name: 'External resource',
+        link: 'https://example.com/guide',
+        type: 'Resource',
+      },
+    ]).as('getLinkedCards')
 
-    cy.visit('/discovery/plans')
-    cy.wait('@getPlanCards')
-    cy.get('[data-automation-id="discovery-plans-empty"]').should('be.visible')
+    cy.visit('/discovery/')
+    cy.wait('@getLinkedCards')
+    cy.window().then((win) => {
+      cy.stub(win, 'open').as('openCardLink')
+    })
+
+    const targets = [
+      ['customer-target', 'http://localhost:8080/customer/members/customer-target'],
+      ['admin-target', 'http://localhost:8080/admin/products/admin-target'],
+      ['mentor-target', 'http://localhost:8080/mentor/paths/mentor-target'],
+      ['mentee-target', 'http://localhost:8080/mentee/events/mentee-target'],
+      ['external-target', 'https://example.com/guide'],
+    ]
+
+    targets.forEach(([cardId, href]) => {
+      cy.get(`[data-automation-id="discovery-card-${cardId}"]`).click()
+      cy.get('@openCardLink').should('have.been.calledWith', href, '_self')
+      expect(href).not.to.include('/discovery/discovery')
+      if (!href.startsWith('https://example.com')) {
+        expect(href).to.include(':8080')
+      }
+    })
   })
 
   it('dismisses a linked Notification without navigating and removes it after refetch', () => {
@@ -112,16 +177,12 @@ describe('Discovery card grids', () => {
     cy.get('[data-automation-id="discovery-home-empty"]').should('be.visible')
   })
 
-  it('loads admin for an admin login and keeps Admin and Logout in the local drawer', () => {
+  it('loads the retained admin route for an admin login', () => {
     cy.login(['admin'])
-    cy.visit('/discovery/')
-    cy.get('[data-automation-id="nav-drawer-toggle"]').click()
-    cy.get('[data-automation-id="nav-admin-link"]').scrollIntoView().should('be.visible').click()
+    cy.visit('/discovery/admin')
 
     cy.location('pathname').should('eq', '/discovery/admin')
     cy.contains('Admin - Configuration').should('be.visible')
-    cy.get('[data-automation-id="nav-drawer-toggle"]').click()
-    cy.get('[data-automation-id="nav-admin-link"]').scrollIntoView().should('be.visible')
-    cy.get('[data-automation-id="nav-logout-link"]').scrollIntoView().should('be.visible')
+    cy.get('[data-automation-id="page-frame-title"]').should('contain.text', 'Discovery')
   })
 })

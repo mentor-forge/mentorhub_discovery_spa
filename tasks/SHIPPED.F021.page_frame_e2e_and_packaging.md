@@ -1,6 +1,6 @@
 # F021 – PageFrame Cypress coverage and packaging
 
-**Status**: Pending  
+**Status**: Shipped  
 **Type**: Feature  
 **Depends On**: `F020_card_journey_deep_links`  
 **Description**: Point Cypress at spa_utils `PageFrame` automation ids, cover catalog CardGrid routes and `:8080` card/deep-link hrefs, and verify the packaged SPA.
@@ -82,4 +82,21 @@ Do not restore a local drawer. Do not change the spa_utils pin. Do not add new/c
 
 ## Execution Notes
 
-*(Reserved for the task execution agent.)*
+- Plan:
+  - Replace legacy local-drawer Cypress expectations with the shared `PageFrame` automation ids, absolute welcome/ALB href checks, and role-gated catalog coverage.
+  - Expand CardGrid route coverage across every Discovery list route plus the retained admin route, and verify cross-journey card href composition without navigating away.
+  - Run unit tests, type checking, build, E2E against the debug service, then rebuild and repeat E2E against the packaged container; record command and spot-check results below.
+- Implemented:
+  - Migrated navigation coverage to `PageFrame` ids, including title/profile/common links, mentor/customer/admin/mentee-only role gates, `:8080` absolute hrefs, duplicate-prefix rejection, and built-in logout.
+  - Added all seven CardGrid route empty-state checks, retained `/discovery/admin` coverage, and exercised customer/admin/mentor/mentee card targets plus an unchanged external HTTPS resource.
+- Verification:
+  - `npm run test` — passed: 10 files, 60 tests.
+  - `npm run lint` — passed.
+  - `npm run build` — passed; Vite reported the existing runtime-config script and large-chunk warnings.
+  - `npm run api` — passed; Discovery API dependencies started.
+  - Debug `npm run cypress:run` — first run found an invalid chained href assertion (cards 5/5 passed; navigation 1/5 passed); assertion was fixed within `navigation.cy.ts`. Repeat passed: 2 specs, 10/10 tests.
+  - `npm run container` — passed; image `ghcr.io/mentor-forge/mentorhub_discovery_spa:latest` built. Build reported one high-severity npm audit finding and Docker's existing JSON-form `CMD` recommendation.
+  - `npm run service` — passed; packaged API and SPA containers started.
+  - Packaged `npm run cypress:run` — passed: 2 specs, 10/10 tests.
+  - Spot-check — `http://localhost:8398/discovery/` and `http://localhost:8080/discovery/` both returned HTTP 200. Packaged Cypress confirmed visible `page-frame-title`, drawer chrome, and Home href `http://localhost:8080/discovery/` (never `:8398`).
+- Orchestrator confirmation: `npm run test` (60 passed), `npm run lint`, `npm run build`, and `npm run cypress:run` passed 10/10 against the packaged stack. `http://localhost:8398/discovery/` returns the SPA shell.
