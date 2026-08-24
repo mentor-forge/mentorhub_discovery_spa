@@ -1,30 +1,95 @@
 <template>
   <v-container>
-    <v-row>
-      <v-col>
-        <h1 class="text-h4 mb-4" data-automation-id="discovery-home-heading">
-          Discovery landing (stub)
-        </h1>
-        <p class="text-body-1 mb-6" data-automation-id="discovery-home-description">
-          Placeholder for F-DS01 polymorphic CardGrid. Cards will surface cross-SPA links and
-          discovery content here.
-        </p>
-      </v-col>
-    </v-row>
+    <h1
+      class="text-h4 mb-4"
+      :data-automation-id="`discovery-${source}-heading`"
+    >
+      {{ pageTitle }}
+    </h1>
 
-    <CardGrid automation-id="discovery-home-grid">
-      <MhCard
-        title="Coming soon"
-        automation-id="discovery-home-placeholder-card"
+    <div
+      v-if="isLoading"
+      :data-automation-id="`discovery-${source}-loading`"
+    >
+      Loading cards…
+    </div>
+
+    <v-alert
+      v-else-if="error"
+      type="error"
+      :data-automation-id="`discovery-${source}-error`"
+    >
+      {{ errorMessage }}
+    </v-alert>
+
+    <div
+      v-else-if="!cards?.length"
+      :data-automation-id="`discovery-${source}-empty`"
+    >
+      No cards to display.
+    </div>
+
+    <CardGrid
+      v-else
+      :automation-id="`discovery-${source}-grid`"
+    >
+      <DiscoveryCard
+        v-for="card in cards"
+        :key="card._id ?? `${card.type}-${card.name}`"
+        :card="card"
+        @dismiss="handleDismiss"
       >
-        <p class="text-body-2 mb-0" data-automation-id="discovery-home-placeholder-text">
-          CardGrid scaffolding is wired; domain cards arrive in F-DS01.
-        </p>
-      </MhCard>
+      </DiscoveryCard>
     </CardGrid>
+
+    <v-alert
+      v-if="dismissError"
+      class="mt-4"
+      type="error"
+      :data-automation-id="`discovery-${source}-dismiss-error`"
+    >
+      {{ dismissErrorMessage }}
+    </v-alert>
   </v-container>
 </template>
 
 <script setup lang="ts">
-import { CardGrid, MhCard } from '@mentor-forge/mentorhub_spa_utils'
+import { CardGrid } from '@mentor-forge/mentorhub_spa_utils'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import type { Card } from '@/api/types'
+import DiscoveryCard from '@/components/DiscoveryCard.vue'
+import { useCards, type CardListSource } from '@/composables/useCards'
+
+const route = useRoute()
+const source = computed<CardListSource>(() => route.meta.cardSource as CardListSource)
+const pageTitle = computed(() => route.meta.title as string)
+const {
+  data: cards,
+  isLoading,
+  error,
+  dismissNotification,
+  dismissError,
+} = useCards(source)
+
+const errorMessage = computed(() =>
+  error.value instanceof Error ? error.value.message : 'Unable to load cards.',
+)
+const dismissErrorMessage = computed(() =>
+  dismissError.value instanceof Error
+    ? dismissError.value.message
+    : 'Unable to dismiss notification.',
+)
+
+async function handleDismiss(card: Card) {
+  if (!card._id) {
+    return
+  }
+
+  try {
+    await dismissNotification(card._id)
+  } catch {
+    // The mutation error is rendered above.
+  }
+}
 </script>

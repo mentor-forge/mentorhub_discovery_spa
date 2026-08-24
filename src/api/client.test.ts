@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { redirectToIdpLogin, useAuth } from '@mentor-forge/mentorhub_spa_utils'
 import { api } from './client'
+import type { Card, Notification } from './types'
 
 vi.mock('@mentor-forge/mentorhub_spa_utils', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@mentor-forge/mentorhub_spa_utils')>()
@@ -17,6 +18,17 @@ vi.mock('@mentor-forge/mentorhub_spa_utils', async (importOriginal) => {
 
 const mockFetch = vi.fn()
 global.fetch = mockFetch
+
+function jsonResponse(body: unknown) {
+  return {
+    ok: true,
+    status: 200,
+    headers: {
+      get: (name: string) => name === 'content-length' ? '100' : null
+    },
+    json: async () => body
+  }
+}
 
 describe('API Client', () => {
   beforeEach(() => {
@@ -56,13 +68,104 @@ describe('API Client', () => {
 
       expect(result).toEqual(mockConfig)
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/config',
+        '/discovery/api/config',
         expect.objectContaining({
           headers: expect.objectContaining({
             'Authorization': 'Bearer test-token'
           })
         })
       )
+    })
+  })
+
+  describe('Card lists', () => {
+    const cards: Card[] = [
+      {
+        _id: '665f1c2a9b1e4c0a1b2c3d4e',
+        name: 'Example card',
+        description: 'Example card body',
+        link: 'https://example.com/card',
+        type: 'Resource',
+      },
+    ]
+
+    beforeEach(() => {
+      localStorage.setItem('access_token', 'test-token')
+    })
+
+    it.each([
+      ['home', '/discovery/api/cards', () => api.getHomeCards()],
+      ['members', '/discovery/api/cards/members', () => api.getMemberCards()],
+      ['resources', '/discovery/api/cards/resources', () => api.getResourceCards()],
+      ['paths', '/discovery/api/cards/paths', () => api.getPathCards()],
+      ['plans', '/discovery/api/cards/plans', () => api.getPlanCards()],
+      ['products', '/discovery/api/cards/products', () => api.getProductCards()],
+      ['notifications', '/discovery/api/cards/notifications', () => api.getNotificationCards()],
+    ])('should fetch %s cards with default pagination headers', async (_, url, call) => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(cards))
+
+      const result = await call()
+
+      expect(result).toEqual(cards)
+      expect(mockFetch).toHaveBeenCalledWith(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-token',
+          offset: '0',
+          size: '20',
+        },
+      })
+    })
+
+    it('should pass custom pagination values as request headers', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(cards))
+
+      await api.getResourceCards(40, 100)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/discovery/api/cards/resources',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            offset: '40',
+            size: '100',
+          }),
+        })
+      )
+    })
+  })
+
+  describe('Notification dismiss', () => {
+    it('should post without a body and return the Notification document', async () => {
+      localStorage.setItem('access_token', 'test-token')
+      const notification: Notification = {
+        _id: '665f1c2a9b1e4c0a1b2c3d4e',
+        name: 'welcome',
+        message: 'Welcome to Mentor Hub',
+        status: 'active',
+        dismissed: {
+          from_ip: '127.0.0.1',
+          by_user: 'test-user',
+          at_time: '2026-08-23T20:00:00Z',
+          correlation_id: 'test-correlation-id',
+        },
+      }
+      mockFetch.mockResolvedValueOnce(jsonResponse(notification))
+
+      const result = await api.dismissNotification(notification._id!)
+
+      expect(result).toEqual(notification)
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/discovery/api/notification/dismiss/665f1c2a9b1e4c0a1b2c3d4e',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer test-token',
+          },
+        }
+      )
+      expect(mockFetch.mock.calls[0][1]).not.toHaveProperty('body')
     })
   })
 

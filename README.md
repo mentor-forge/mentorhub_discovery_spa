@@ -5,7 +5,7 @@ Guidance for LLM Code Assistants - NOTE: We are currently pre-release. At this t
 
 UI Components should stick to Vuetify styling, and leverage re-usable input components from SPA utils when possible. If a spa_utils component need to be updated, the code can be copied to this repo, edited, tested, and migrated to the utils repo like new re-usable components are.
 
-Bootstrapped from `mentorhub_mentee_spa` (F-W18). Domain pages are stripped; authenticated landing is a Discovery stub ready for F-DS01 CardGrid work.
+Bootstrapped from `mentorhub_mentee_spa` (F-W18). The authenticated Discovery experience is a set of polymorphic card-grid routes backed by the Discovery API.
 
 ## Prerequisites
 - Mentor Hub [Developers Edition](https://github.com/mentor-forge/mentorhub/blob/main/CONTRIBUTING.md)
@@ -17,6 +17,10 @@ Bootstrapped from `mentorhub_mentee_spa` (F-W18). Domain pages are stripped; aut
 ## Just run the service
 npm run service 
 ```
+
+Open the Discovery SPA through the Developer Edition welcome origin at
+`http://localhost:8080/discovery/`. For direct container debugging, use
+`http://localhost:8398/discovery/`.
 
 ## Developer Commands
 
@@ -30,7 +34,7 @@ npx cypress install
 ## package code for deployment
 npm run build 
 
-## run dev server, assumes api is running - captures command line
+## run dev server at http://localhost:8398/discovery/, assumes api is running
 npm run dev 
 
 ## type-check (lint)
@@ -69,14 +73,14 @@ npm run container
 ```
 src/
   api/              # API client layer (types.ts, client.ts)
-  pages/            # Route-level components (Discovery stub, AdminPage)
+  pages/            # Route-level components (shared Discovery card grid, AdminPage)
   composables/      # App-specific composables (useConfig, useRoles wrapper); auth from spa_utils
   stores/           # Pinia stores (UI state only)
   router/           # Vue Router configuration
   plugins/          # Vuetify plugin configuration
 ```
 
-**Note**: This SPA uses `@mentor-forge/mentorhub_spa_utils` **0.5.5** for reusable components, composables, and utilities. See the [mentorhub_spa_utils README](../mentorhub_spa_utils/README.md) for complete documentation.
+**Note**: This SPA uses `@mentor-forge/mentorhub_spa_utils` **1.0.0** for reusable components, composables, and utilities. See the [mentorhub_spa_utils README](../mentorhub_spa_utils/README.md) for complete documentation.
 
 ## Key Implementation Patterns
 
@@ -86,15 +90,37 @@ src/
 - Sign-in uses IdP / URL hash (`bootstrapAuthFromUrl` from spa_utils); APIs are not used as a login surface
 - Router guards protect routes requiring authentication
 
+### Layout and navigation
+- The root layout uses `PageFrame` from `@mentor-forge/mentorhub_spa_utils` 1.0.0 as the shared app bar, role-gated navigation drawer, profile link, and logout shell.
+- Discovery passes `pageTitle="Discovery"` and renders its router view in the default slot. The universal navigation catalog and cross-SPA links are owned by spa_utils, not configured locally.
+
 ### API Client
 - Located in `src/api/client.ts`
+- Builds its API root from Vite's base URL, so app requests use `/discovery/api/`
+  through the SPA nginx proxy
 - All API calls include JWT token from localStorage
 - Error handling via `ApiError` class; 401 triggers IdP redirect
 - Type-safe with TypeScript interfaces in `src/api/types.ts`
 
-### Default Landing
-- Authenticated users land on `/discovery` — a CardGrid-ready stub for F-DS01
-- Admin users retain `/admin` (spa_utils `AdminPage`)
+### Routes
+- `/` — composite Home card grid from `GET /discovery/api/cards`
+- `/members` (also `/members/`) — member cards
+- `/resources` — learning Resource cards
+- `/paths` — learning Path cards
+- `/plans` — encounter Plan cards
+- `/products` — product cards
+- `/notifications` — notification cards
+- `/admin` — existing configuration page for users with the `admin` role
+
+All seven list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids can be dismissed.
+
+### Cross-SPA card links
+- Discovery remains the only host for the CardGrid list dashboards; Customer, Admin,
+  Mentor, and Mentee SPAs own their detail, edit, and create pages.
+- Card targets for those pages are composed with spa_utils `buildJourneyUrl`,
+  `resolveAlbOrigin`, and `JOURNEY_APP_PATHS`. Direct Vite/debug-port links are
+  rewritten through the welcome/ALB origin (`:8080` in Developer Edition).
+- Absolute HTTP(S) learning-resource links outside Mentor Hub are kept unchanged.
 
 ## Testing
 
@@ -116,7 +142,9 @@ All interactive elements in this SPA include `data-automation-id` attributes fol
 `.github/workflows/docker-push.yml` builds and pushes the container image. Registry credentials and dependency policy for your org live in SRE / standards docs, not in this README.
 
 ## Configuration
-- Runtime configuration available at `/api/config` endpoint
+- Runtime configuration for the app is available at `/discovery/api/config`
 - Docker container uses `API_HOST` and `API_PORT` environment variables for API proxy configuration
 - Container listens on port 80 internally; map host port **8398** to container port 80
-- Dev server: `http://localhost:8398`; discovery API proxy target: `http://localhost:8397`
+- Dev server: `http://localhost:8398/discovery/`; discovery API proxy target: `http://localhost:8397`
+- The SPA nginx proxies both `/discovery/api/` (welcome/prefixed traffic) and `/api/` (direct-port debugging) to the Discovery API.
+- This container serves only the Discovery journey. It is not an edge router and does not proxy other journey SPAs or their APIs.

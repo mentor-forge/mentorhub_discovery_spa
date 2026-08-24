@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
+  base: '/discovery/',
   plugins: [vue()],
   test: {
     server: {
@@ -50,6 +51,12 @@ export default defineConfig({
           lines: 90,
           functions: 90,
           branches: 60,
+          statements: 90,
+        },
+        'src/components/**': {
+          lines: 90,
+          functions: 90,
+          branches: 85,
           statements: 90,
         },
       },

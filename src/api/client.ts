@@ -1,7 +1,9 @@
-import type { ConfigResponse, Error } from './types'
+import type { Card, ConfigResponse, Error, Notification } from './types'
 import { redirectToIdpLogin, useAuth } from '@mentor-forge/mentorhub_spa_utils'
 
-const API_BASE = '/api'
+const API_BASE = `${import.meta.env.BASE_URL}api`
+const DEFAULT_OFFSET = 0
+const DEFAULT_SIZE = 20
 
 class ApiError extends Error {
   constructor(
@@ -62,9 +64,96 @@ async function request<T>(
   return response.json()
 }
 
+function paginationHeaders(
+  offset = DEFAULT_OFFSET,
+  size = DEFAULT_SIZE
+): Record<string, string> {
+  return {
+    offset: String(offset),
+    size: String(size),
+  }
+}
+
 export const api = {
   async getConfig(): Promise<ConfigResponse> {
     return request<ConfigResponse>('/config')
+  },
+
+  async getHomeCards(
+    offset = DEFAULT_OFFSET,
+    size = DEFAULT_SIZE
+  ): Promise<Card[]> {
+    return request<Card[]>('/cards', {
+      method: 'GET',
+      headers: paginationHeaders(offset, size),
+    })
+  },
+
+  async getMemberCards(
+    offset = DEFAULT_OFFSET,
+    size = DEFAULT_SIZE
+  ): Promise<Card[]> {
+    return request<Card[]>('/cards/members', {
+      method: 'GET',
+      headers: paginationHeaders(offset, size),
+    })
+  },
+
+  async getResourceCards(
+    offset = DEFAULT_OFFSET,
+    size = DEFAULT_SIZE
+  ): Promise<Card[]> {
+    return request<Card[]>('/cards/resources', {
+      method: 'GET',
+      headers: paginationHeaders(offset, size),
+    })
+  },
+
+  async getPathCards(
+    offset = DEFAULT_OFFSET,
+    size = DEFAULT_SIZE
+  ): Promise<Card[]> {
+    return request<Card[]>('/cards/paths', {
+      method: 'GET',
+      headers: paginationHeaders(offset, size),
+    })
+  },
+
+  async getPlanCards(
+    offset = DEFAULT_OFFSET,
+    size = DEFAULT_SIZE
+  ): Promise<Card[]> {
+    return request<Card[]>('/cards/plans', {
+      method: 'GET',
+      headers: paginationHeaders(offset, size),
+    })
+  },
+
+  async getProductCards(
+    offset = DEFAULT_OFFSET,
+    size = DEFAULT_SIZE
+  ): Promise<Card[]> {
+    return request<Card[]>('/cards/products', {
+      method: 'GET',
+      headers: paginationHeaders(offset, size),
+    })
+  },
+
+  async getNotificationCards(
+    offset = DEFAULT_OFFSET,
+    size = DEFAULT_SIZE
+  ): Promise<Card[]> {
+    return request<Card[]>('/cards/notifications', {
+      method: 'GET',
+      headers: paginationHeaders(offset, size),
+    })
+  },
+
+  async dismissNotification(notificationId: string): Promise<Notification> {
+    return request<Notification>(
+      `/notification/dismiss/${encodeURIComponent(notificationId)}`,
+      { method: 'POST' }
+    )
   },
 }
 

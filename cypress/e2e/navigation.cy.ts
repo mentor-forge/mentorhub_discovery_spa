@@ -1,52 +1,78 @@
 describe('Navigation Drawer', () => {
-  beforeEach(() => {
-    cy.login()
-  })
+  const openDrawer = () => {
+    cy.get('[data-automation-id="nav-drawer-toggle"]').should('be.visible').click()
+  }
 
-  it('should open navigation drawer with hamburger menu', () => {
-    cy.visit('/discovery')
-    cy.get('[data-automation-id="nav-drawer-toggle"]').should('be.visible')
-    cy.get('[data-automation-id="nav-drawer-toggle"]').click()
+  const assertAlbHref = (automationId: string, pathname: string) => {
+    cy.get(`[data-automation-id="${automationId}"]`)
+      .should(($link) => {
+        const href = $link.attr('href')
+        expect(href).to.eq(`http://localhost:8080${pathname}`)
+        expect(href).not.to.include(':8398')
+        expect(href).not.to.include('/discovery/discovery')
+      })
+  }
 
-    cy.get('[data-automation-id="nav-discovery-link"]').should('be.visible')
-  })
+  it('renders PageFrame chrome and absolute navigation hrefs', () => {
+    cy.login(['mentor'])
+    cy.visit('/discovery/')
 
-  it('should not show mentee domain links in drawer', () => {
-    cy.visit('/discovery')
-    cy.get('[data-automation-id="nav-drawer-toggle"]').click()
+    cy.get('[data-automation-id="page-frame-title"]')
+      .should('be.visible')
+      .and('contain.text', 'Discovery')
+    assertAlbHref('nav-profile-link', '/customer/profile/')
 
-    cy.get('[data-automation-id="nav-journey-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-paths-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-resources-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-journeys-list-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-ratings-list-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-notes-list-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-events-list-link"]').should('not.exist')
-  })
-
-  it('should have admin and logout at bottom of drawer', () => {
-    cy.login(['admin'])
-    cy.visit('/discovery')
-    cy.get('[data-automation-id="nav-drawer-toggle"]').click()
-
-    cy.get('[data-automation-id="nav-admin-link"]').scrollIntoView().should('be.visible')
+    openDrawer()
+    assertAlbHref('nav-home-link', '/discovery/')
+    assertAlbHref('nav-notifications-link', '/discovery/notifications')
+    assertAlbHref('nav-resources-link', '/discovery/resources')
+    assertAlbHref('nav-paths-link', '/discovery/paths')
+    assertAlbHref('nav-plans-link', '/discovery/plans')
     cy.get('[data-automation-id="nav-logout-link"]').scrollIntoView().should('be.visible')
   })
 
-  it('should close drawer after navigation', () => {
+  it('shows customer catalog rows only for a customer login', () => {
+    cy.login(['customer'])
+    cy.visit('/discovery/')
+    openDrawer()
+
+    assertAlbHref('nav-customer-link', '/customer/')
+    assertAlbHref('nav-customer-members-link', '/discovery/members/')
+    cy.get('[data-automation-id="nav-resources-link"]').should('not.exist')
+    cy.get('[data-automation-id="nav-products-link"]').should('not.exist')
+  })
+
+  it('shows products and settings only for an admin login', () => {
     cy.login(['admin'])
-    cy.visit('/discovery')
-    cy.get('[data-automation-id="nav-drawer-toggle"]').click()
+    cy.visit('/discovery/')
+    openDrawer()
 
-    cy.get('[data-automation-id="nav-admin-link"]').click()
+    assertAlbHref('nav-products-link', '/discovery/products')
+    assertAlbHref('nav-settings-link', '/admin/settings')
+    cy.get('[data-automation-id="nav-customer-link"]').should('not.exist')
+    cy.get('[data-automation-id="nav-resources-link"]').should('not.exist')
+  })
 
-    cy.wait(500)
-    cy.get('[data-automation-id="nav-discovery-link"]').should('not.be.visible')
+  it('shows only common catalog rows for a mentee-only login', () => {
+    cy.login(['mentee'])
+    cy.visit('/discovery/')
+    openDrawer()
+
+    assertAlbHref('nav-home-link', '/discovery/')
+    assertAlbHref('nav-notifications-link', '/discovery/notifications')
+    cy.get('[data-automation-id="nav-customer-link"]').should('not.exist')
+    cy.get('[data-automation-id="nav-customer-members-link"]').should('not.exist')
+    cy.get('[data-automation-id="nav-resources-link"]').should('not.exist')
+    cy.get('[data-automation-id="nav-paths-link"]').should('not.exist')
+    cy.get('[data-automation-id="nav-plans-link"]').should('not.exist')
+    cy.get('[data-automation-id="nav-products-link"]').should('not.exist')
+    cy.get('[data-automation-id="nav-settings-link"]').should('not.exist')
   })
 
   it('should logout and redirect to IdP login', () => {
-    cy.visit('/discovery')
-    cy.get('[data-automation-id="nav-drawer-toggle"]').click()
+    cy.login(['mentee'])
+    cy.visit('/discovery/')
+    openDrawer()
     cy.get('[data-automation-id="nav-logout-link"]').scrollIntoView().click()
 
     cy.origin('http://127.0.0.1:8080', () => {
