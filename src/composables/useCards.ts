@@ -3,16 +3,26 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { api } from '@/api/client'
 import type { Card } from '@/api/types'
 
-export type CardListSource = 'home' | 'resources' | 'paths' | 'plans'
+export type CardListSource =
+  | 'home'
+  | 'members'
+  | 'resources'
+  | 'paths'
+  | 'plans'
+  | 'products'
+  | 'notifications'
 
 const DEFAULT_OFFSET = 0
 const DEFAULT_SIZE = 20
 
 const listRequests: Record<CardListSource, (offset: number, size: number) => Promise<Card[]>> = {
   home: api.getHomeCards,
+  members: api.getMemberCards,
   resources: api.getResourceCards,
   paths: api.getPathCards,
   plans: api.getPlanCards,
+  products: api.getProductCards,
+  notifications: api.getNotificationCards,
 }
 
 export function useCards(source: MaybeRefOrGetter<CardListSource>) {

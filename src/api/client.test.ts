@@ -95,9 +95,12 @@ describe('API Client', () => {
 
     it.each([
       ['home', '/discovery/api/cards', () => api.getHomeCards()],
+      ['members', '/discovery/api/cards/members', () => api.getMemberCards()],
       ['resources', '/discovery/api/cards/resources', () => api.getResourceCards()],
       ['paths', '/discovery/api/cards/paths', () => api.getPathCards()],
       ['plans', '/discovery/api/cards/plans', () => api.getPlanCards()],
+      ['products', '/discovery/api/cards/products', () => api.getProductCards()],
+      ['notifications', '/discovery/api/cards/notifications', () => api.getNotificationCards()],
     ])('should fetch %s cards with default pagination headers', async (_, url, call) => {
       mockFetch.mockResolvedValueOnce(jsonResponse(cards))
 

@@ -1,6 +1,6 @@
 # F018 – Catalog CardGrid routes: members, products, notifications
 
-**Status**: Pending  
+**Status**: Shipped
 **Type**: Feature  
 **Depends On**: `F017_pin_spa_utils_1_0_0`  
 **Description**: Add Discovery CardGrid list pages for `members/`, `products`, and `notifications` so Vue routes match spa_utils `JOURNEY_APP_PATHS`. Keep existing home / resources / paths / plans / admin. Do not adopt `PageFrame` yet; do not add deferred new buttons.
@@ -71,4 +71,21 @@ Do not replace `App.vue` chrome. Do not add new/create buttons.
 
 ## Execution Notes
 
-*(Reserved for the task execution agent.)*
+- Plan:
+  - Fetch the running Discovery API OpenAPI document and confirm the members, products, and notifications card-list paths.
+  - Extend the typed card API client and `useCards` source map, with unit coverage for all three list sources and their `/discovery/api/cards/...` URLs.
+  - Register the three shared CardGrid routes (including the catalog-compatible members trailing-slash alias) and document the complete Discovery list surface.
+  - Run `npm run test`, `npm run lint`, and `npm run build`.
+- OpenAPI:
+  - Fetched the definitive document from `http://localhost:8397/docs/openapi.yaml`.
+  - Confirmed `GET /api/cards/members`, `GET /api/cards/products`, and `GET /api/cards/notifications`; each returns the shared `CardArray` and accepts `offset` / `size` request headers.
+- Implemented:
+  - Added typed client methods and `useCards` sources for members, products, and notifications.
+  - Added `/members` (alias `/members/`), `/products`, and `/notifications` routes using the shared `DiscoveryHomePage` CardGrid pattern.
+  - Added client/composable unit coverage and documented all seven Discovery list surfaces.
+  - Left `App.vue` unchanged; no drawer items, PageFrame, create buttons, or deferred routes were added.
+- Verification:
+  - `npm run test` — passed (9 files, 54 tests).
+  - `npm run lint` — passed.
+  - `npm run build` — passed; Vite emitted existing runtime-config and chunk-size warnings.
+- Orchestrator confirmation: `npm run test` (54 passed), `npm run lint`, and `npm run build` passed. Routes `/members` (alias `/members/`), `/products`, and `/notifications` are registered.

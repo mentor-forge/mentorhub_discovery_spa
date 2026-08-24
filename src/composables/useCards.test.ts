@@ -9,9 +9,12 @@ import { useCards, type CardListSource } from './useCards'
 vi.mock('@/api/client', () => ({
   api: {
     getHomeCards: vi.fn(),
+    getMemberCards: vi.fn(),
     getResourceCards: vi.fn(),
     getPathCards: vi.fn(),
     getPlanCards: vi.fn(),
+    getProductCards: vi.fn(),
+    getNotificationCards: vi.fn(),
     dismissNotification: vi.fn(),
   },
 }))
@@ -48,9 +51,12 @@ describe('useCards', () => {
 
   it.each([
     ['home', 'getHomeCards'],
+    ['members', 'getMemberCards'],
     ['resources', 'getResourceCards'],
     ['paths', 'getPathCards'],
     ['plans', 'getPlanCards'],
+    ['products', 'getProductCards'],
+    ['notifications', 'getNotificationCards'],
   ] as const)('loads the first %s card page', async (source, method) => {
     vi.mocked(api[method]).mockResolvedValue(cards)
     const { composable, queryClient, wrapper } = mountCards(source)

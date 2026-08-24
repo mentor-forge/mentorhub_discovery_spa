@@ -89,6 +89,16 @@ export const api = {
     })
   },
 
+  async getMemberCards(
+    offset = DEFAULT_OFFSET,
+    size = DEFAULT_SIZE
+  ): Promise<Card[]> {
+    return request<Card[]>('/cards/members', {
+      method: 'GET',
+      headers: paginationHeaders(offset, size),
+    })
+  },
+
   async getResourceCards(
     offset = DEFAULT_OFFSET,
     size = DEFAULT_SIZE
@@ -114,6 +124,26 @@ export const api = {
     size = DEFAULT_SIZE
   ): Promise<Card[]> {
     return request<Card[]>('/cards/plans', {
+      method: 'GET',
+      headers: paginationHeaders(offset, size),
+    })
+  },
+
+  async getProductCards(
+    offset = DEFAULT_OFFSET,
+    size = DEFAULT_SIZE
+  ): Promise<Card[]> {
+    return request<Card[]>('/cards/products', {
+      method: 'GET',
+      headers: paginationHeaders(offset, size),
+    })
+  },
+
+  async getNotificationCards(
+    offset = DEFAULT_OFFSET,
+    size = DEFAULT_SIZE
+  ): Promise<Card[]> {
+    return request<Card[]>('/cards/notifications', {
       method: 'GET',
       headers: paginationHeaders(offset, size),
     })

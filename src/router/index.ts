@@ -11,6 +11,13 @@ const router = createRouter({
       meta: { requiresAuth: true, cardSource: 'home', title: 'Home' },
     },
     {
+      path: '/members',
+      alias: '/members/',
+      name: 'Members',
+      component: () => import('@/pages/DiscoveryHomePage.vue'),
+      meta: { requiresAuth: true, cardSource: 'members', title: 'Members' },
+    },
+    {
       path: '/resources',
       name: 'Resources',
       component: () => import('@/pages/DiscoveryHomePage.vue'),
@@ -27,6 +34,18 @@ const router = createRouter({
       name: 'Plans',
       component: () => import('@/pages/DiscoveryHomePage.vue'),
       meta: { requiresAuth: true, cardSource: 'plans', title: 'Plans' },
+    },
+    {
+      path: '/products',
+      name: 'Products',
+      component: () => import('@/pages/DiscoveryHomePage.vue'),
+      meta: { requiresAuth: true, cardSource: 'products', title: 'Products' },
+    },
+    {
+      path: '/notifications',
+      name: 'Notifications',
+      component: () => import('@/pages/DiscoveryHomePage.vue'),
+      meta: { requiresAuth: true, cardSource: 'notifications', title: 'Notifications' },
     },
     {
       path: '/admin',

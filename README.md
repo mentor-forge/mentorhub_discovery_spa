@@ -100,12 +100,15 @@ src/
 
 ### Routes
 - `/` — composite Home card grid from `GET /discovery/api/cards`
+- `/members` (also `/members/`) — member cards
 - `/resources` — learning Resource cards
 - `/paths` — learning Path cards
 - `/plans` — encounter Plan cards
+- `/products` — product cards
+- `/notifications` — notification cards
 - `/admin` — existing configuration page for users with the `admin` role
 
-All four list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home grid can be dismissed.
+All seven list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids can be dismissed.
 
 ## Testing
 
