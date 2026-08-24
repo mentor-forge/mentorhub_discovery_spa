@@ -60,7 +60,9 @@ router.beforeEach((to, _from, next) => {
   const { isAuthenticated } = useAuth()
 
   if (to.meta.requiresAuth && !isAuthenticated.value) {
-    redirectToIdpLogin(window.location.origin + to.fullPath)
+    const base = import.meta.env.BASE_URL
+    const routePath = to.fullPath === '/' ? '' : to.fullPath.replace(/^\//, '')
+    redirectToIdpLogin(`${window.location.origin}${base}${routePath}`)
     next(false)
     return
   }

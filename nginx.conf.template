@@ -87,15 +87,18 @@ http {
             try_files $uri =404;
         }
 
-        # Map the public journey prefix to the Vite dist root and handle Vue Router history mode
+        # Map the public journey prefix to the Vite dist root and handle Vue Router history mode.
+        # HTML must not be cached: a stale shell with root /assets URLs 404s on welcome :8080.
         location /discovery/ {
             rewrite ^/discovery/(.*)$ /$1 break;
             try_files $uri $uri/ /index.html;
+            add_header Cache-Control "no-store";
         }
 
         # Keep root-path files available for direct-port debugging
         location / {
             try_files $uri $uri/ /index.html;
+            add_header Cache-Control "no-store";
         }
 
         # Map and cache prefixed static assets from the dist root
