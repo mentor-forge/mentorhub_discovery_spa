@@ -41,6 +41,7 @@ import { MhCard } from '@mentor-forge/mentorhub_spa_utils'
 import { computed } from 'vue'
 import type { Card } from '@/api/types'
 import { cardAppearance } from '@/utils/cardAppearance'
+import { cardHref } from '@/utils/cardHref'
 import MarkdownView from './MarkdownView.vue'
 
 interface Props {
@@ -55,11 +56,12 @@ const emit = defineEmits<{
 
 const appearance = computed(() => cardAppearance(props.card.type))
 const automationId = computed(() => `discovery-card-${props.card._id ?? 'unknown'}`)
-const hasLink = computed(() => Boolean(props.card.link))
+const href = computed(() => cardHref(props.card))
+const hasLink = computed(() => Boolean(href.value))
 
 function openLink() {
-  if (props.card.link) {
-    window.open(props.card.link, '_self')
+  if (href.value) {
+    window.open(href.value, '_self')
   }
 }
 </script>

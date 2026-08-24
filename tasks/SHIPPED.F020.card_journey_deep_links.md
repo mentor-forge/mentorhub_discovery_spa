@@ -1,6 +1,6 @@
 # F020 – Card and in-page deep links via `buildJourneyUrl`
 
-**Status**: Pending  
+**Status**: Shipped  
 **Type**: Feature  
 **Depends On**: `F019_adopt_page_frame`  
 **Description**: Compose Discovery card and in-page deep links with spa_utils `buildJourneyUrl`, `resolveAlbOrigin`, and `JOURNEY_APP_PATHS` so Customer / Admin / Mentor / Mentee detail views open through welcome/ALB prefixes — never Vite/debug ports.
@@ -59,4 +59,22 @@ Do not add new Vue list routes. Do not link to debug ports.
 
 ## Execution Notes
 
-*(Reserved for the task execution agent.)*
+- Plan: centralize card click-target resolution in a small utility that preserves external
+  absolute HTTP(S) resources, normalizes relative/debug-port journey links through
+  spa_utils, and supplies owning-journey fallbacks from card type/path metadata.
+- Update `DiscoveryCard` to use the resolved href for clickability and navigation, add
+  focused unit coverage for Customer/Admin/Mentor/Mentee targets from a `:8398`
+  location, and document that Discovery remains the list host.
+- Run `npm run test`, `npm run lint`, and `npm run build`.
+- Implemented `src/utils/cardHref.ts`: explicit journey prefixes and route-shaped links
+  are mapped to their owning SPA, type-based fallbacks provide detail targets when
+  `card.link` is absent, known/same-host debug-port URLs are rebuilt through the
+  welcome origin, and external absolute HTTP(S) resources are returned unchanged.
+- `DiscoveryCard` now bases clickability and `_self` navigation on the composed href.
+  README documents ALB composition and Discovery's list-dashboard ownership.
+- Verification:
+  - `npm run test` — passed (10 files, 60 tests).
+  - `npm run lint` — passed.
+  - `npm run build` — passed. Vite reported the existing runtime-config script and
+    large-chunk advisory warnings; neither failed the build.
+- Orchestrator confirmation: `npm run test` (60 passed), `npm run lint`, and `npm run build` passed. From `:8398`, composed hrefs use `:8080` journey prefixes; external HTTP(S) links stay unchanged.

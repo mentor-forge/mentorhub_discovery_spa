@@ -106,7 +106,11 @@ describe('DiscoveryCard', () => {
     await wrapper.get('[data-automation-id="discovery-card-path-1-body-display"]').trigger('click')
 
     expect(open).toHaveBeenCalledTimes(2)
-    expect(open).toHaveBeenNthCalledWith(1, '/paths/path-1', '_self')
+    expect(open).toHaveBeenNthCalledWith(
+      1,
+      expect.stringMatching(/^http:\/\/localhost:8080\/mentor\/paths\/path-1$/),
+      '_self',
+    )
   })
 
   it('opens a linked card with the Enter key', async () => {
@@ -115,7 +119,10 @@ describe('DiscoveryCard', () => {
 
     await wrapper.get('.discovery-card').trigger('keydown', { key: 'Enter' })
 
-    expect(open).toHaveBeenCalledWith('/events/event-1', '_self')
+    expect(open).toHaveBeenCalledWith(
+      expect.stringMatching(/^http:\/\/localhost:8080\/mentee\/events\/event-1$/),
+      '_self',
+    )
   })
 
   it('emits dismiss for a Notification without following its link', async () => {
@@ -135,16 +142,19 @@ describe('DiscoveryCard', () => {
     expect(open).not.toHaveBeenCalled()
   })
 
-  it('does not navigate or render undefined when link and description are missing', async () => {
+  it('composes a welcome URL and does not render undefined when link is missing', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
     const wrapper = mountCard({ name: 'Unlinked' })
 
     await wrapper.get('.discovery-card').trigger('click')
 
-    expect(wrapper.get('.discovery-card').attributes('role')).toBeUndefined()
-    expect(wrapper.get('.discovery-card').attributes('tabindex')).toBeUndefined()
+    expect(wrapper.get('.discovery-card').attributes('role')).toBe('link')
+    expect(wrapper.get('.discovery-card').attributes('tabindex')).toBe('0')
     expect(wrapper.get('[data-automation-id="discovery-card-unknown-body-display"]').text()).toBe('')
     expect(wrapper.html()).not.toContain('undefined')
-    expect(open).not.toHaveBeenCalled()
+    expect(open).toHaveBeenCalledWith(
+      expect.stringMatching(/^http:\/\/localhost:8080\/customer\/$/),
+      '_self',
+    )
   })
 })

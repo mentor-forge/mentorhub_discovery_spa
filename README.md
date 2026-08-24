@@ -114,6 +114,14 @@ src/
 
 All seven list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids can be dismissed.
 
+### Cross-SPA card links
+- Discovery remains the only host for the CardGrid list dashboards; Customer, Admin,
+  Mentor, and Mentee SPAs own their detail, edit, and create pages.
+- Card targets for those pages are composed with spa_utils `buildJourneyUrl`,
+  `resolveAlbOrigin`, and `JOURNEY_APP_PATHS`. Direct Vite/debug-port links are
+  rewritten through the welcome/ALB origin (`:8080` in Developer Edition).
+- Absolute HTTP(S) learning-resource links outside Mentor Hub are kept unchanged.
+
 ## Testing
 
 ### Unit Tests
