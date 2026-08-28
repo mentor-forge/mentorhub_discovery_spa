@@ -7,6 +7,26 @@
       {{ pageTitle }}
     </h1>
 
+    <v-row
+      v-if="source !== 'home'"
+      align="center"
+      class="mb-4"
+      :data-automation-id="`discovery-${source}-toolbar`"
+    >
+      <v-col cols="12" sm="3" class="d-none d-sm-flex" />
+      <v-col cols="12" sm="6" class="d-flex justify-center">
+        <div class="w-100" style="max-width: 480px;">
+          <ListPageSearch
+            :searchable="true"
+            :search-query="searchQuery"
+            :debounced-search="debouncedSearch"
+            :automation-id="`discovery-${source}-search`"
+          />
+        </div>
+      </v-col>
+      <v-col cols="12" sm="3" class="d-flex justify-end" />
+    </v-row>
+
     <div
       v-if="isLoading"
       :data-automation-id="`discovery-${source}-loading`"
@@ -54,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { CardGrid } from '@mentor-forge/mentorhub_spa_utils'
+import { CardGrid, ListPageSearch } from '@mentor-forge/mentorhub_spa_utils'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Card } from '@/api/types'
@@ -70,6 +90,8 @@ const {
   error,
   dismissNotification,
   dismissError,
+  searchQuery,
+  debouncedSearch,
 } = useCards(source)
 
 const errorMessage = computed(() =>

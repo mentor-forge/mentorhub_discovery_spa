@@ -1,6 +1,6 @@
 # F023 – Search by Name on non-home CardGrid lists
 
-**Status**: Pending  
+**Status**: Shipped  
 **Type**: Feature  
 **Depends On**: `F022_typed_list_name_query`  
 **Description**: Add a centered Search by Name input above the card grid on every CardGrid list except the default Home dashboard. Wire the debounced value through `useCards` to the F022 `name` query. Do not add Invite/New buttons in this task.
@@ -71,4 +71,21 @@ Do not add create/invite buttons. Do not change PageFrame props or the spa_utils
 
 ## Execution Notes
 
-- Reserved for the task execution agent.
+- Extended `useCards` composable (`src/composables/useCards.ts`):
+  - Added 300ms debounce handling via `debouncedSearch` and `searchQuery`.
+  - Added reactive `queryKey` reflecting debounced search string (`['cards', source, name]` vs `['cards', source]`).
+  - Added client-side contains filter on `card.name` for notifications.
+  - Reset search state on route/source changes.
+- Updated `DiscoveryHomePage.vue` (`src/pages/DiscoveryHomePage.vue`):
+  - Rendered 3-column toolbar row (`data-automation-id="discovery-${source}-toolbar"`) above the grid on all non-home card list pages.
+  - Centered `ListPageSearch` with `data-automation-id="discovery-${source}-search"`.
+  - Preserved Home (`/`) without search input.
+- Added comprehensive unit tests in `src/composables/useCards.test.ts` covering:
+  - 300ms debounce delay and API parameter passing
+  - Blank/whitespace search omission
+  - Home query ignoring search and never sending name parameter
+  - Notifications client-side name contains filter
+- Verification results:
+  - `npm run test`: 10 test files passed (74 tests total)
+  - `npm run lint`: passed cleanly
+  - `npm run build`: built production bundle successfully

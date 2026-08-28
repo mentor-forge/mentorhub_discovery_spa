@@ -92,4 +92,110 @@ describe('useCards', () => {
     wrapper.unmount()
     queryClient.clear()
   })
+
+  it('passes debounced name search to typed lists and updates query key', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(api.getResourceCards).mockResolvedValue(cards)
+      const { composable, queryClient, wrapper } = mountCards('resources')
+
+      await vi.waitFor(() => {
+        expect(composable.isSuccess.value).toBe(true)
+      })
+      expect(api.getResourceCards).toHaveBeenCalledWith(0, 20)
+
+      composable.debouncedSearch('TypeScript')
+      expect(composable.searchQuery.value).toBe('TypeScript')
+
+      // Before 300ms, debounced query has not fired
+      expect(api.getResourceCards).toHaveBeenCalledTimes(1)
+
+      // Advance timers past 300ms debounce
+      await vi.advanceTimersByTimeAsync(300)
+
+      await vi.waitFor(() => {
+        expect(api.getResourceCards).toHaveBeenCalledWith(0, 20, 'TypeScript')
+      })
+
+      wrapper.unmount()
+      queryClient.clear()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('omits name query when search is blank or whitespace only', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(api.getPathCards).mockResolvedValue(cards)
+      const { composable, queryClient, wrapper } = mountCards('paths')
+
+      await vi.waitFor(() => {
+        expect(composable.isSuccess.value).toBe(true)
+      })
+
+      composable.debouncedSearch('   ')
+      await vi.advanceTimersByTimeAsync(300)
+
+      await vi.waitFor(() => {
+        expect(api.getPathCards).toHaveBeenLastCalledWith(0, 20)
+      })
+
+      wrapper.unmount()
+      queryClient.clear()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('home list never passes name parameter even if search is called', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(api.getHomeCards).mockResolvedValue(cards)
+      const { composable, queryClient, wrapper } = mountCards('home')
+
+      await vi.waitFor(() => {
+        expect(composable.isSuccess.value).toBe(true)
+      })
+
+      composable.debouncedSearch('ignored-term')
+      await vi.advanceTimersByTimeAsync(300)
+
+      expect(api.getHomeCards).toHaveBeenCalledWith(0, 20)
+
+      wrapper.unmount()
+      queryClient.clear()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('filters notification cards client-side by name', async () => {
+    vi.useFakeTimers()
+    try {
+      const notifs: Card[] = [
+        { _id: 'n1', name: 'Welcome Alert', type: 'Notification' },
+        { _id: 'n2', name: 'System Maintenance', type: 'Notification' },
+      ]
+      vi.mocked(api.getNotificationCards).mockResolvedValue(notifs)
+      const { composable, queryClient, wrapper } = mountCards('notifications')
+
+      await vi.waitFor(() => {
+        expect(composable.isSuccess.value).toBe(true)
+      })
+      expect(composable.data.value).toEqual(notifs)
+
+      composable.debouncedSearch('welcome')
+      await vi.advanceTimersByTimeAsync(300)
+
+      await vi.waitFor(() => {
+        expect(composable.data.value).toEqual([notifs[0]])
+      })
+
+      wrapper.unmount()
+      queryClient.clear()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
