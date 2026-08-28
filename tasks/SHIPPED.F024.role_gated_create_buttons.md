@@ -1,6 +1,6 @@
 # F024 – Role-gated Invite and New collection buttons
 
-**Status**: Pending  
+**Status**: Shipped  
 **Type**: Feature  
 **Depends On**: `F023_search_by_name_lists`  
 **Description**: Add right-aligned create/invite actions above the card grids: Home Invite Member / Invite Coordinator by role, and New Resource / Path / Plan on those list pages for mentors. Hrefs use `buildJourneyUrl` through the welcome/ALB origin.
@@ -106,4 +106,13 @@ Do not change PageFrame props, card click `cardHref` fallbacks, or the spa_utils
 
 ## Execution Notes
 
-- Reserved for the task execution agent.
+- Implemented `src/utils/createActionHref.ts` to map `inviteMember`, `inviteCoordinator`, `newResource`, `newPath`, `newPlan` to cross-SPA welcome/ALB URLs via `buildJourneyUrl` and `resolveAlbOrigin`.
+- Added unit tests in `src/utils/createActionHref.test.ts` asserting `:8080` origin resolution from debug port `8398`, trailing slashes, and absence of `/new` segments or debug ports.
+- Updated `src/pages/DiscoveryHomePage.vue`:
+  - Wired `useRoles` (`hasRole`) to render `Invite Member` (`coordinator`) and `Invite Coordinator` (`customer`) on Home.
+  - Rendered `New Resource`, `New Path`, and `New Plan` buttons in the right column of the toolbar row on `/resources`, `/paths`, and `/plans` when caller has `mentor` role.
+  - Used stable automation IDs: `discovery-home-invite-member-button`, `discovery-home-invite-coordinator-button`, `discovery-resources-new-button`, `discovery-paths-new-button`, `discovery-plans-new-button`.
+- Verification results:
+  - `npm run test`: 11 test files passed (80 tests total)
+  - `npm run lint`: passed cleanly
+  - `npm run build`: built production bundle successfully
