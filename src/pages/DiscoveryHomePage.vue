@@ -8,7 +8,7 @@
     </h1>
 
     <v-row
-      v-if="source !== 'home' || hasRole('coordinator') || hasRole('customer')"
+      v-if="source !== 'home' || hasRole('coordinator').value || hasRole('customer').value"
       align="center"
       class="mb-4"
       :data-automation-id="`discovery-${source}-toolbar`"
@@ -27,7 +27,7 @@
       <v-col cols="12" sm="3" class="d-flex justify-end ga-2">
         <template v-if="source === 'home'">
           <v-btn
-            v-if="hasRole('coordinator')"
+            v-if="hasRole('coordinator').value"
             color="primary"
             variant="elevated"
             :href="createActionHref('inviteMember')"
@@ -36,7 +36,7 @@
             Invite Member
           </v-btn>
           <v-btn
-            v-if="hasRole('customer')"
+            v-if="hasRole('customer').value"
             color="primary"
             variant="elevated"
             :href="createActionHref('inviteCoordinator')"
@@ -45,7 +45,7 @@
             Invite Coordinator
           </v-btn>
         </template>
-        <template v-else-if="hasRole('mentor')">
+        <template v-else-if="hasRole('mentor').value">
           <v-btn
             v-if="source === 'resources'"
             color="primary"

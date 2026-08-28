@@ -114,6 +114,17 @@ src/
 
 All seven list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids can be dismissed.
 
+### Search and Action Toolbar
+- **Search by Name**: All non-home CardGrid lists (`/members`, `/resources`, `/paths`, `/plans`, `/products`, `/notifications`) provide a centered, 300ms-debounced Search by Name input (`ListPageSearch`). The Home composite dashboard (`/`) remains pagination-only and omits the search control.
+- **Home Invites**: The Home toolbar displays right-aligned invitation actions based on caller roles:
+  - `Invite Member` (visible when roles contain `coordinator`) → Customer SPA members create page (`/customer/members/`)
+  - `Invite Coordinator` (visible when roles contain `customer`) → Customer SPA coordinators create page (`/customer/coordinators/`)
+- **Collection Create**: Typed catalog pages provide right-aligned create buttons for mentors:
+  - `New Resource` (on `/resources` when roles contain `mentor`) → Mentor SPA resources create page (`/mentor/resources/`)
+  - `New Path` (on `/paths` when roles contain `mentor`) → Mentor SPA paths create page (`/mentor/paths/`)
+  - `New Plan` (on `/plans` when roles contain `mentor`) → Mentor SPA plans create page (`/mentor/plans/`)
+- All cross-SPA create and invite hrefs use the standard `buildJourneyUrl` ALB create pattern (`/{journey}/{domain}/` with trailing slash, no `/new` segment).
+
 ### Cross-SPA card links
 - Discovery remains the only host for the CardGrid list dashboards; Customer, Admin,
   Mentor, and Mentee SPAs own their detail, edit, and create pages.

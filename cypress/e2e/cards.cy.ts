@@ -6,11 +6,11 @@ const emptyConfig = {
 
 describe('Discovery card grids', () => {
   beforeEach(() => {
-    cy.login()
     cy.intercept('GET', '**/discovery/api/config', emptyConfig)
   })
 
   it('uses the root landing page and renders card names, markdown, and type appearances', () => {
+    cy.login()
     cy.intercept('GET', '**/discovery/api/cards', [
       {
         _id: 'resource-markdown',
@@ -55,6 +55,7 @@ describe('Discovery card grids', () => {
   })
 
   it('visits every CardGrid route and accepts empty states', () => {
+    cy.login()
     const routes = [
       { source: 'home', path: '/discovery/', endpoint: 'cards' },
       { source: 'members', path: '/discovery/members/', endpoint: 'cards/members' },
@@ -80,6 +81,7 @@ describe('Discovery card grids', () => {
   })
 
   it('opens cross-journey card targets through :8080 and preserves external links', () => {
+    cy.login()
     cy.intercept('GET', '**/discovery/api/cards', [
       {
         _id: 'customer-target',
@@ -138,6 +140,7 @@ describe('Discovery card grids', () => {
   })
 
   it('dismisses a linked Notification without navigating and removes it after refetch', () => {
+    cy.login()
     let homeCards = [
       {
         _id: 'notification-dismiss',
@@ -184,5 +187,204 @@ describe('Discovery card grids', () => {
     cy.location('pathname').should('eq', '/discovery/admin')
     cy.contains('Admin - Configuration').should('be.visible')
     cy.get('[data-automation-id="page-frame-title"]').should('contain.text', 'Discovery')
+  })
+
+  it('provides Search by Name on non-home CardGrid lists and omits it on Home', () => {
+    cy.login()
+    cy.visit('/discovery/')
+    cy.get('[data-automation-id="discovery-home-search"]').should('not.exist')
+
+    const resourceCards = [
+      {
+        _id: 'resource-vue',
+        name: 'Vue Essentials',
+        description: 'Guide to Vue.',
+        type: 'Resource',
+      },
+      {
+        _id: 'resource-react',
+        name: 'React Overview',
+        description: 'Guide to React.',
+        type: 'Resource',
+      },
+    ]
+
+    cy.intercept('GET', '**/discovery/api/cards/resources*', (req) => {
+      const name = req.query.name as string | undefined
+      if (!name) {
+        req.reply(resourceCards)
+      } else if (name.toLowerCase().includes('vue')) {
+        req.reply([resourceCards[0]])
+      } else {
+        req.reply([])
+      }
+    }).as('getResources')
+
+    cy.visit('/discovery/resources')
+    cy.wait('@getResources')
+
+    cy.get('[data-automation-id="discovery-resources-search"]').should('be.visible')
+    cy.get('[data-automation-id="discovery-card-resource-vue"]').should('be.visible')
+    cy.get('[data-automation-id="discovery-card-resource-react"]').should('be.visible')
+
+    // Search with match
+    cy.get('[data-automation-id="discovery-resources-search"] input').type('Vue')
+    cy.wait('@getResources').then((interception) => {
+      expect(interception.request.url).to.include('name=Vue')
+    })
+    cy.get('[data-automation-id="discovery-card-resource-vue"]').should('be.visible')
+    cy.get('[data-automation-id="discovery-card-resource-react"]').should('not.exist')
+
+    // Search with no match
+    cy.get('[data-automation-id="discovery-resources-search"] input').clear().type('Nonexistent')
+    cy.wait('@getResources').then((interception) => {
+      expect(interception.request.url).to.include('name=Nonexistent')
+    })
+    cy.get('[data-automation-id="discovery-resources-empty"]').should('be.visible')
+
+    // Clear search restores unfiltered cards
+    cy.get('[data-automation-id="discovery-resources-search"] input').clear()
+    cy.wait('@getResources').then((interception) => {
+      expect(interception.request.url).not.to.include('name=')
+    })
+    cy.get('[data-automation-id="discovery-card-resource-vue"]').should('be.visible')
+    cy.get('[data-automation-id="discovery-card-resource-react"]').should('be.visible')
+
+    // Also verify search exists on paths
+    cy.intercept('GET', '**/discovery/api/cards/paths*', []).as('getPaths')
+    cy.visit('/discovery/paths')
+    cy.wait('@getPaths')
+    cy.get('[data-automation-id="discovery-paths-search"]').should('be.visible')
+  })
+
+  it('renders Invite Member on Home for coordinator login', () => {
+    cy.intercept('GET', '**/discovery/api/cards', []).as('getHome')
+    cy.login(['coordinator'])
+    cy.visit('/discovery/')
+    cy.wait('@getHome')
+
+    cy.get('[data-automation-id="discovery-home-invite-member-button"]')
+      .should('be.visible')
+      .and('have.attr', 'href', 'http://localhost:8080/customer/members/')
+      .and(($btn) => {
+        const href = $btn.attr('href')
+        expect(href).not.to.include(':8398')
+        expect(href).not.to.include('/discovery/discovery')
+        expect(href).not.to.include('/new')
+      })
+    cy.get('[data-automation-id="discovery-home-invite-coordinator-button"]').should('not.exist')
+  })
+
+  it('renders Invite Coordinator on Home for customer login', () => {
+    cy.intercept('GET', '**/discovery/api/cards', []).as('getHome')
+    cy.login(['customer'])
+    cy.visit('/discovery/')
+    cy.wait('@getHome')
+
+    cy.get('[data-automation-id="discovery-home-invite-coordinator-button"]')
+      .should('be.visible')
+      .and('have.attr', 'href', 'http://localhost:8080/customer/coordinators/')
+      .and(($btn) => {
+        const href = $btn.attr('href')
+        expect(href).not.to.include(':8398')
+        expect(href).not.to.include('/discovery/discovery')
+        expect(href).not.to.include('/new')
+      })
+    cy.get('[data-automation-id="discovery-home-invite-member-button"]').should('not.exist')
+  })
+
+  it('renders both invite buttons on Home when login has both coordinator and customer roles', () => {
+    cy.intercept('GET', '**/discovery/api/cards', []).as('getHome')
+    cy.login(['coordinator', 'customer'])
+    cy.visit('/discovery/')
+    cy.wait('@getHome')
+
+    cy.get('[data-automation-id="discovery-home-invite-member-button"]').should('be.visible')
+    cy.get('[data-automation-id="discovery-home-invite-coordinator-button"]').should('be.visible')
+  })
+
+  it('omits invite buttons on Home for mentor-only login', () => {
+    cy.intercept('GET', '**/discovery/api/cards', []).as('getHome')
+    cy.login(['mentor'])
+    cy.visit('/discovery/')
+    cy.wait('@getHome')
+
+    cy.get('[data-automation-id="discovery-home-invite-member-button"]').should('not.exist')
+    cy.get('[data-automation-id="discovery-home-invite-coordinator-button"]').should('not.exist')
+  })
+
+  it('renders role-gated New buttons on resources, paths, and plans for mentor login', () => {
+    cy.login(['mentor'])
+
+    const collectionRoutes = [
+      {
+        source: 'resources',
+        path: '/discovery/resources',
+        btnId: 'discovery-resources-new-button',
+        expectedHref: 'http://localhost:8080/mentor/resources/',
+      },
+      {
+        source: 'paths',
+        path: '/discovery/paths',
+        btnId: 'discovery-paths-new-button',
+        expectedHref: 'http://localhost:8080/mentor/paths/',
+      },
+      {
+        source: 'plans',
+        path: '/discovery/plans',
+        btnId: 'discovery-plans-new-button',
+        expectedHref: 'http://localhost:8080/mentor/plans/',
+      },
+    ]
+
+    collectionRoutes.forEach(({ source, path, btnId, expectedHref }) => {
+      cy.intercept('GET', `**/discovery/api/cards/${source}*`, []).as(`get${source}`)
+      cy.visit(path)
+      cy.wait(`@get${source}`)
+
+      cy.get(`[data-automation-id="${btnId}"]`)
+        .should('be.visible')
+        .and('have.attr', 'href', expectedHref)
+        .and(($btn) => {
+          const href = $btn.attr('href')
+          expect(href).not.to.include(':8398')
+          expect(href).not.to.include('/discovery/discovery')
+          expect(href).not.to.include('/new')
+        })
+    })
+  })
+
+  it('omits New buttons on resources, paths, and plans for non-mentor login', () => {
+    cy.login(['mentee'])
+    const collectionRoutes = [
+      { source: 'resources', path: '/discovery/resources', btnId: 'discovery-resources-new-button' },
+      { source: 'paths', path: '/discovery/paths', btnId: 'discovery-paths-new-button' },
+      { source: 'plans', path: '/discovery/plans', btnId: 'discovery-plans-new-button' },
+    ]
+
+    collectionRoutes.forEach(({ source, path, btnId }) => {
+      cy.intercept('GET', `**/discovery/api/cards/${source}*`, []).as(`get${source}Mentee`)
+      cy.visit(path)
+      cy.wait(`@get${source}Mentee`)
+      cy.get(`[data-automation-id="${btnId}"]`).should('not.exist')
+    })
+  })
+
+  it('omits New and Invite buttons on members, products, and notifications', () => {
+    cy.login(['mentor', 'coordinator', 'customer'])
+    const otherRoutes = [
+      { source: 'members', path: '/discovery/members/' },
+      { source: 'products', path: '/discovery/products' },
+      { source: 'notifications', path: '/discovery/notifications' },
+    ]
+
+    otherRoutes.forEach(({ source, path }) => {
+      cy.intercept('GET', `**/discovery/api/cards/${source}*`, []).as(`get${source}Other`)
+      cy.visit(path)
+      cy.wait(`@get${source}Other`)
+      cy.get(`[data-automation-id="discovery-${source}-new-button"]`).should('not.exist')
+      cy.get(`[data-automation-id="discovery-${source}-invite-member-button"]`).should('not.exist')
+      cy.get(`[data-automation-id="discovery-${source}-invite-coordinator-button"]`).should('not.exist')
+    })
   })
 })

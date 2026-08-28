@@ -1,6 +1,6 @@
 # F025 – Search and create-action Cypress coverage, README, and packaging
 
-**Status**: Pending  
+**Status**: Shipped  
 **Type**: Feature  
 **Depends On**: `F024_role_gated_create_buttons`  
 **Description**: Cover Search by Name and role-gated Invite/New buttons in Cypress, document the toolbar in the README, and verify the packaged SPA.
@@ -67,4 +67,18 @@ Do not restore a local drawer. Do not change the spa_utils pin. Do not add Vue r
 
 ## Execution Notes
 
-- Reserved for the task execution agent.
+- Updated `cypress/e2e/cards.cy.ts`:
+  - Added E2E tests for Search by Name on non-home card lists (`/resources`, `/paths`), debounce, matching card fixture rendering, empty-state on no match, and query omission upon search clearing.
+  - Added E2E tests for role-gated Home invite buttons (`Invite Member` for coordinator, `Invite Coordinator` for customer, both for multi-role, none for mentor).
+  - Added E2E tests for mentor role-gated `New Resource`, `New Path`, `New Plan` collection buttons with ALB `:8080` create URLs (`/{journey}/{domain}/`).
+  - Added negative tests asserting omission of New buttons for non-mentors and absence of create/invite buttons on `/members`, `/products`, and `/notifications`.
+- Updated `README.md`:
+  - Documented Search and Action Toolbar, search debouncing, Home invite actions, collection create actions, and cross-SPA ALB URL conventions.
+- Packaging verification:
+  - `npm run container`: built `ghcr.io/mentor-forge/mentorhub_discovery_spa:latest` successfully.
+  - `npm run service`: started MongoDB, API, and packaged SPA containers.
+  - `npm run cypress:run`: All 18 tests passed across `cards.cy.ts` (13 tests) and `navigation.cy.ts` (5 tests).
+- Automated tests:
+  - `npm run test`: 11 test files passed (80 tests total).
+  - `npm run lint`: passed cleanly.
+  - `npm run build`: built production bundle successfully.
