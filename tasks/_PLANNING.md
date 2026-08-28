@@ -105,4 +105,3 @@ Start the backing API if needed (`npm run api`), then fetch the latest JSON sche
 ```bash
 curl -X GET "http://localhost:8397/docs/openapi.yaml"
 ```
-

@@ -1,6 +1,6 @@
 # F022 – Typed card-list client: optional `name` contains query
 
-**Status**: Pending  
+**Status**: Shipped  
 **Type**: Feature  
 **Depends On**: none  
 **Description**: Extend typed Card list client methods so non-home lists can send the OpenAPI `name` contains query. Home `GET /api/cards` stays pagination-only. Do not add Search UI or create buttons in this task.
@@ -71,4 +71,20 @@ Do not change pages, composables, router, or Cypress.
 
 ## Execution Notes
 
-- Reserved for the task execution agent.
+- Live OpenAPI verification against running Discovery API (`http://localhost:8397/docs/openapi.yaml`):
+  - Operations documenting `NameContainsQuery` (`name` query param):
+    - `getResourceCards` (`GET /api/cards/resources`)
+    - `getPathCards` (`GET /api/cards/paths`)
+    - `getPlanCards` (`GET /api/cards/plans`)
+  - Operations not documenting `name`:
+    - `getHomeCards` (`GET /api/cards`) — pagination only (`offset`, `size` headers).
+    - `getNotificationCards` (`GET /api/cards/notifications`) — parameters are `offset`, `size` headers and `sort_by`, `order` query params. `name` is not supported in the API spec, so `getNotificationCards` does not send `name` (F023 handles client-side filtering for notifications).
+- Implemented `buildCardPath` in `src/api/client.ts` and updated `getMemberCards`, `getResourceCards`, `getPathCards`, `getPlanCards`, `getProductCards` to accept optional `name?: string`.
+- Added unit tests in `src/api/client.test.ts` covering:
+  - Query parameter encoding and trimming
+  - Empty string, whitespace-only, and undefined omission
+  - `getHomeCards` remaining pagination-only
+- Verification results:
+  - `npm run test`: 10 test files passed (70 tests total)
+  - `npm run lint`: passed cleanly
+  - `npm run build`: built production bundle successfully
