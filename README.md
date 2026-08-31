@@ -68,19 +68,33 @@ npm run open
 npm run container
 ```
 
-## Architecture Overview
+## Architecture Ownership
 
-```
-src/
-  api/              # API client layer (types.ts, client.ts)
-  pages/            # Route-level components (shared Discovery card grid, AdminPage)
-  composables/      # App-specific composables (useConfig, useRoles wrapper); auth from spa_utils
-  stores/           # Pinia stores (UI state only)
-  router/           # Vue Router configuration
-  plugins/          # Vuetify plugin configuration
-```
+| Layer | Owns |
+|-------|------|
+| **This SPA** | Collection/list CardGrid browsing (home, members, resources, paths, plans, products, notifications), Discovery page state, Discovery API client, Search by Name / role-gated create toolbar presentation, card deep-link composition |
+| **`spa_utils` 1.0.0** | Auth/JWT bootstrap, IdP redirect, `PageFrame` chrome, role-gated hamburger catalog, `buildJourneyUrl` / ALB origin rules, `ListPageSearch`, `CardGrid` / `MhCard` |
+| **Customer / Mentor / Admin / Mentee SPAs** | Detail, edit, and create pages that Discovery cards and Invite/New buttons target |
+| **nginx (this container)** | `/discovery/` document prefix, SPA history fallback, `/discovery/api/` → `discovery_api`, dual runtime-config paths, cache headers |
+| **Discovery API** | Authorization enforcement, card list filtering, notification dismiss |
 
-**Note**: This SPA uses `@mentor-forge/mentorhub_spa_utils` **1.0.0** for reusable components, composables, and utilities. See the [mentorhub_spa_utils README](../mentorhub_spa_utils/README.md) for complete documentation.
+Uses `@mentor-forge/mentorhub_spa_utils` **1.0.0**. Local nav config is disallowed — do not pass `navItems`, URL maps, or ALB origins to `PageFrame`. Cross-SPA hrefs are absolute welcome/ALB `:8080` URLs from `buildJourneyUrl`, never direct debug ports (`:8398`, etc.).
+
+### Prohibited patterns
+- Hosting detail/edit/create pages that belong to another journey SPA
+- Hard-coding journey prefixes, ALB origins, or debug ports outside `buildJourneyUrl` / `resolveAlbOrigin`
+- Baking `IDP_LOGIN_URI` into the Vite build artifact
+- Treating UI role gating as proof of API authorization
+
+### Deployment Prefix & Runtime Config Invariants
+
+- Browser document and assets load under `/discovery/` (Vite `base` + nginx rewrite onto a flat dist root).
+- HTML and `/discovery/runtime-config.js` / `/runtime-config.js` are `Cache-Control: no-store` (never `immutable`).
+- Fingerprinted `/discovery/assets/*` may be `public, immutable`.
+- `location ^~ /discovery/api/` wins over the static-asset regex so `/discovery/api/*.js` cannot be cached as an asset.
+- Prefixed and root `runtime-config.js` serve the **same** container-generated file for this image. The Discovery SPA must not silently consume another journey's runtime config; the HTML shell must request `/discovery/runtime-config.js`.
+- Runtime config is injected at container start from compose `IDP_LOGIN_URI` — it is not baked into the immutable build artifact.
+- Supported browser entry: `http://<host>:8080/discovery/`. Direct-port `http://localhost:8398/discovery/` is debugging only. `/` and `/discovery` redirect to `/discovery/`.
 
 ## Key Implementation Patterns
 
@@ -114,6 +128,19 @@ src/
 
 All seven list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids can be dismissed.
 
+### Search and Action Toolbar
+- **Search by Name**: All non-home CardGrid lists provide a centered, 300ms-debounced Search by Name input (`ListPageSearch`). The Home composite dashboard remains pagination-only and omits the search control.
+- **Typed lists** (`members`, `resources`, `paths`, `plans`, `products`): debounced search becomes an API `?name=` query on `GET /discovery/api/cards/{collection}`. Empty/whitespace search omits `name`.
+- **Notifications** (intentional exception): Search by Name filters the already-loaded page **client-side** with a case-insensitive `card.name` contains match. The notifications list request stays pagination-only and must **not** receive `name=`. Do not invent an API filter that the contract does not own.
+- **Home Invites**: The Home toolbar displays right-aligned invitation actions based on caller roles:
+  - `Invite Member` (visible when roles contain `coordinator`) → Customer SPA members create page (`/customer/members/`)
+  - `Invite Coordinator` (visible when roles contain `customer`) → Customer SPA coordinators create page (`/customer/coordinators/`)
+- **Collection Create**: Typed catalog pages provide right-aligned create buttons for mentors:
+  - `New Resource` (on `/resources` when roles contain `mentor`) → Mentor SPA resources create page (`/mentor/resources/`)
+  - `New Path` (on `/paths` when roles contain `mentor`) → Mentor SPA paths create page (`/mentor/paths/`)
+  - `New Plan` (on `/plans` when roles contain `mentor`) → Mentor SPA plans create page (`/mentor/plans/`)
+- All cross-SPA create and invite hrefs use `createActionHref` → spa_utils `buildJourneyUrl` (`/{journey}/{domain}/` with trailing slash, no `/new` segment). Owning SPAs host those create pages; Discovery only composes the destination.
+
 ### Cross-SPA card links
 - Discovery remains the only host for the CardGrid list dashboards; Customer, Admin,
   Mentor, and Mentee SPAs own their detail, edit, and create pages.
@@ -128,23 +155,33 @@ All seven list routes share one CardGrid page and load the first 20 cards using 
 - Uses Vitest for unit testing
 - Run tests: `npm run test:unit`
 - Coverage report: `npm run test:coverage`
+- Covers API client (`name` query encoding), `useCards` (debounce, query keys, client-side notification filter, source-change reset, stale-result rejection), and `createActionHref` ALB composition
 
 ### E2E Tests
-- Uses Cypress for end-to-end testing
-- Run tests: `npm run cypress` (interactive) or `npm run cypress:run` (headless)
+- Cypress against the packaged SPA on `http://localhost:8398` (`npm run service` must be running; do not run `npm run dev` at the same time)
+- Prefer `cy.visitPrefixed(...)` over raw `cy.visit` for in-app routes — it asserts `PerformanceNavigationTiming` so a Vue Router rewrite cannot mask an un-prefixed document fetch
+- Specs cover CardGrid catalogs, Search by Name (API-backed vs notifications client-side), role-gated Invite/New buttons (positive and negative), spa_utils `PageFrame` chrome, and the nginx deployment boundary (`deployment.cy.ts`: redirects, history fallback, cache headers, dual runtime-config, authenticated and unauthenticated `/discovery/api` proxy)
+- UI role gating is UX; API authorization is proven separately via Bearer requests through `/discovery/api/`
 
 ## Automation Support
 
 All interactive elements in this SPA include `data-automation-id` attributes following the `{domain}-{page}-{element}` naming convention.
+
+Cypress targets spa_utils `PageFrame` ids for chrome, not local ones:
+
+- Always present when authenticated: `nav-drawer-toggle`, `page-frame-title`, `nav-profile-link`, `nav-home-link`, `nav-notifications-link`, `nav-logout-link`
+- Role-gated examples: `nav-resources-link` (mentor), `nav-products-link` / `nav-settings-link` (admin), `nav-customer-link` (customer)
+
+Do not define host `nav-*` ids in this SPA.
 
 ## CI
 
 `.github/workflows/docker-push.yml` builds and pushes the container image. Registry credentials and dependency policy for your org live in SRE / standards docs, not in this README.
 
 ## Configuration
-- Runtime configuration for the app is available at `/discovery/api/config`
-- Docker container uses `API_HOST` and `API_PORT` environment variables for API proxy configuration
-- Container listens on port 80 internally; map host port **8398** to container port 80
-- Dev server: `http://localhost:8398/discovery/`; discovery API proxy target: `http://localhost:8397`
-- The SPA nginx proxies both `/discovery/api/` (welcome/prefixed traffic) and `/api/` (direct-port debugging) to the Discovery API.
+- **Supported browser entry**: `http://<host>:8080/discovery/` via Developer Edition welcome / ALB
+- **Direct-port debugging only**: `http://localhost:8398/discovery/`; `http://localhost:8398/` and `/discovery` redirect to `/discovery/`
+- **API proxy**: client calls `/discovery/api/` (derived from Vite `base`); container nginx proxies to `http://${API_HOST}:${API_PORT}/api/` on `discovery_api` (**8397**). Direct-port `/api/` kept for debugging
+- Runtime enumerators come from `GET /discovery/api/config`, not OpenAPI
+- Container uses `API_HOST`, `API_PORT`, and `IDP_LOGIN_URI` at startup; same image every environment
 - This container serves only the Discovery journey. It is not an edge router and does not proxy other journey SPAs or their APIs.

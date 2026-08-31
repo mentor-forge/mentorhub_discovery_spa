@@ -133,6 +133,84 @@ describe('API Client', () => {
         })
       )
     })
+
+    it.each([
+      ['members', '/discovery/api/cards/members?name=Alice', () => api.getMemberCards(0, 20, 'Alice')],
+      ['resources', '/discovery/api/cards/resources?name=TypeScript%20Guide', () => api.getResourceCards(0, 20, 'TypeScript Guide')],
+      ['paths', '/discovery/api/cards/paths?name=Frontend', () => api.getPathCards(0, 20, 'Frontend')],
+      ['plans', '/discovery/api/cards/plans?name=Weekly', () => api.getPlanCards(0, 20, 'Weekly')],
+      ['products', '/discovery/api/cards/products?name=Subscription', () => api.getProductCards(0, 20, 'Subscription')],
+    ])('should append trimmed percent-encoded name query on %s cards', async (_, expectedUrl, call) => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(cards))
+
+      const result = await call()
+
+      expect(result).toEqual(cards)
+      expect(mockFetch).toHaveBeenCalledWith(expectedUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-token',
+          offset: '0',
+          size: '20',
+        },
+      })
+    })
+
+    it('should trim whitespace from name query parameter', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(cards))
+
+      await api.getResourceCards(0, 20, '   React Basics   ')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/discovery/api/cards/resources?name=React%20Basics',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({
+            offset: '0',
+            size: '20',
+          }),
+        })
+      )
+    })
+
+    it.each([
+      ['empty string', ''],
+      ['whitespace only', '   '],
+      ['undefined', undefined],
+    ])('should omit name query parameter when name is %s', async (_, nameValue) => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(cards))
+
+      await api.getResourceCards(0, 20, nameValue)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/discovery/api/cards/resources',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({
+            offset: '0',
+            size: '20',
+          }),
+        })
+      )
+    })
+
+    it('should keep home cards pagination-only and never append name query', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(cards))
+
+      await api.getHomeCards(0, 20)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/discovery/api/cards',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({
+            offset: '0',
+            size: '20',
+          }),
+        })
+      )
+    })
   })
 
   describe('Notification dismiss', () => {

@@ -74,6 +74,14 @@ function paginationHeaders(
   }
 }
 
+function buildCardPath(endpoint: string, name?: string): string {
+  const trimmed = name?.trim()
+  if (!trimmed) {
+    return endpoint
+  }
+  return `${endpoint}?name=${encodeURIComponent(trimmed)}`
+}
+
 export const api = {
   async getConfig(): Promise<ConfigResponse> {
     return request<ConfigResponse>('/config')
@@ -91,9 +99,10 @@ export const api = {
 
   async getMemberCards(
     offset = DEFAULT_OFFSET,
-    size = DEFAULT_SIZE
+    size = DEFAULT_SIZE,
+    name?: string
   ): Promise<Card[]> {
-    return request<Card[]>('/cards/members', {
+    return request<Card[]>(buildCardPath('/cards/members', name), {
       method: 'GET',
       headers: paginationHeaders(offset, size),
     })
@@ -101,9 +110,10 @@ export const api = {
 
   async getResourceCards(
     offset = DEFAULT_OFFSET,
-    size = DEFAULT_SIZE
+    size = DEFAULT_SIZE,
+    name?: string
   ): Promise<Card[]> {
-    return request<Card[]>('/cards/resources', {
+    return request<Card[]>(buildCardPath('/cards/resources', name), {
       method: 'GET',
       headers: paginationHeaders(offset, size),
     })
@@ -111,9 +121,10 @@ export const api = {
 
   async getPathCards(
     offset = DEFAULT_OFFSET,
-    size = DEFAULT_SIZE
+    size = DEFAULT_SIZE,
+    name?: string
   ): Promise<Card[]> {
-    return request<Card[]>('/cards/paths', {
+    return request<Card[]>(buildCardPath('/cards/paths', name), {
       method: 'GET',
       headers: paginationHeaders(offset, size),
     })
@@ -121,9 +132,10 @@ export const api = {
 
   async getPlanCards(
     offset = DEFAULT_OFFSET,
-    size = DEFAULT_SIZE
+    size = DEFAULT_SIZE,
+    name?: string
   ): Promise<Card[]> {
-    return request<Card[]>('/cards/plans', {
+    return request<Card[]>(buildCardPath('/cards/plans', name), {
       method: 'GET',
       headers: paginationHeaders(offset, size),
     })
@@ -131,9 +143,10 @@ export const api = {
 
   async getProductCards(
     offset = DEFAULT_OFFSET,
-    size = DEFAULT_SIZE
+    size = DEFAULT_SIZE,
+    name?: string
   ): Promise<Card[]> {
-    return request<Card[]>('/cards/products', {
+    return request<Card[]>(buildCardPath('/cards/products', name), {
       method: 'GET',
       headers: paginationHeaders(offset, size),
     })
