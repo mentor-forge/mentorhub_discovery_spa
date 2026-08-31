@@ -170,7 +170,7 @@ describe('useCards', () => {
     }
   })
 
-  it('filters notification cards client-side by name', async () => {
+  it('filters notification cards client-side by name and never passes name to the API', async () => {
     vi.useFakeTimers()
     try {
       const notifs: Card[] = [
@@ -184,12 +184,119 @@ describe('useCards', () => {
         expect(composable.isSuccess.value).toBe(true)
       })
       expect(composable.data.value).toEqual(notifs)
+      expect(api.getNotificationCards).toHaveBeenCalledWith(0, 20)
 
       composable.debouncedSearch('welcome')
       await vi.advanceTimersByTimeAsync(300)
 
       await vi.waitFor(() => {
         expect(composable.data.value).toEqual([notifs[0]])
+      })
+
+      // Adversarial: notifications must stay pagination-only on the wire.
+      for (const call of vi.mocked(api.getNotificationCards).mock.calls) {
+        expect(call).toEqual([0, 20])
+      }
+
+      wrapper.unmount()
+      queryClient.clear()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('resets search when the card source changes', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(api.getResourceCards).mockResolvedValue(cards)
+      vi.mocked(api.getPathCards).mockResolvedValue(cards)
+
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      })
+      const source = ref<CardListSource>('resources')
+      let composable!: ReturnType<typeof useCards>
+
+      const wrapper = mount(
+        defineComponent({
+          setup() {
+            composable = useCards(source)
+            return () => h('div')
+          },
+        }),
+        {
+          global: {
+            plugins: [[VueQueryPlugin, { queryClient }]],
+          },
+        },
+      )
+
+      await vi.waitFor(() => {
+        expect(composable.isSuccess.value).toBe(true)
+      })
+
+      composable.debouncedSearch('Vue')
+      await vi.advanceTimersByTimeAsync(300)
+      await vi.waitFor(() => {
+        expect(api.getResourceCards).toHaveBeenCalledWith(0, 20, 'Vue')
+      })
+
+      source.value = 'paths'
+      await vi.waitFor(() => {
+        expect(composable.searchQuery.value).toBe('')
+        expect(api.getPathCards).toHaveBeenCalledWith(0, 20)
+      })
+      expect(api.getPathCards).not.toHaveBeenCalledWith(0, 20, 'Vue')
+
+      wrapper.unmount()
+      queryClient.clear()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps a slower previous search response from overwriting a newer query key', async () => {
+    vi.useFakeTimers()
+    try {
+      let resolveVue!: (value: Card[]) => void
+      let resolveReact!: (value: Card[]) => void
+
+      vi.mocked(api.getResourceCards).mockImplementation((_offset, _size, name?) => {
+        if (name === 'Vue') {
+          return new Promise((resolve) => {
+            resolveVue = resolve
+          })
+        }
+        if (name === 'React') {
+          return new Promise((resolve) => {
+            resolveReact = resolve
+          })
+        }
+        return Promise.resolve(cards)
+      })
+
+      const { composable, queryClient, wrapper } = mountCards('resources')
+
+      await vi.waitFor(() => {
+        expect(composable.isSuccess.value).toBe(true)
+      })
+
+      composable.debouncedSearch('Vue')
+      await vi.advanceTimersByTimeAsync(300)
+
+      composable.debouncedSearch('React')
+      await vi.advanceTimersByTimeAsync(300)
+
+      // Newer search resolves first.
+      resolveReact([{ _id: 'react-1', name: 'React', type: 'Resource' }])
+      await vi.waitFor(() => {
+        expect(composable.data.value?.[0]?.name).toBe('React')
+      })
+
+      // Stale Vue response must not replace the active React result.
+      resolveVue([{ _id: 'vue-1', name: 'Vue', type: 'Resource' }])
+      await vi.waitFor(() => {
+        expect(composable.data.value?.[0]?.name).toBe('React')
       })
 
       wrapper.unmount()
