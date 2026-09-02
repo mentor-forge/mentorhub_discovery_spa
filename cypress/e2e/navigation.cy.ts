@@ -22,6 +22,18 @@ describe('Navigation Drawer', () => {
     cy.get('[data-automation-id="nav-drawer-toggle"]').should('be.visible').click()
   }
 
+  const removedCatalogIds = [
+    'nav-products-link',
+    'nav-customer-link',
+    'nav-customer-members-link',
+  ]
+
+  const assertRemovedCatalogRows = () => {
+    removedCatalogIds.forEach((automationId) => {
+      cy.get(`[data-automation-id="${automationId}"]`).should('not.exist')
+    })
+  }
+
   const assertAlbHref = (automationId: string, pathname: string) => {
     cy.get(`[data-automation-id="${automationId}"]`)
       .should(($link) => {
@@ -32,7 +44,7 @@ describe('Navigation Drawer', () => {
       })
   }
 
-  it('renders PageFrame chrome and absolute navigation hrefs', () => {
+  it('renders the mentor catalog with Home and Events on the welcome origin', () => {
     cy.login(['mentor'])
     cy.visitPrefixed('/discovery/')
 
@@ -43,49 +55,112 @@ describe('Navigation Drawer', () => {
 
     openDrawer()
     assertAlbHref('nav-home-link', '/discovery/')
-    assertAlbHref('nav-notifications-link', '/discovery/notifications')
+    assertAlbHref('nav-events-link', '/discovery/events')
     assertAlbHref('nav-resources-link', '/discovery/resources')
     assertAlbHref('nav-paths-link', '/discovery/paths')
     assertAlbHref('nav-plans-link', '/discovery/plans')
+    cy.get('[data-automation-id="nav-notifications-link"]').should('not.exist')
+    cy.get('[data-automation-id="nav-settings-link"]').should('not.exist')
+    assertRemovedCatalogRows()
     cy.get('[data-automation-id="nav-logout-link"]').scrollIntoView().should('be.visible')
   })
 
-  it('shows customer catalog rows only for a customer login', () => {
+  it('shows only Home and Events for a customer login', () => {
     cy.login(['customer'])
     cy.visitPrefixed('/discovery/')
     openDrawer()
 
-    assertAlbHref('nav-customer-link', '/customer/')
-    assertAlbHref('nav-customer-members-link', '/discovery/members/')
+    assertAlbHref('nav-home-link', '/discovery/')
+    assertAlbHref('nav-events-link', '/discovery/events')
+    cy.get('[data-automation-id="nav-notifications-link"]').should('not.exist')
+    cy.get('[data-automation-id="nav-settings-link"]').should('not.exist')
     cy.get('[data-automation-id="nav-resources-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-products-link"]').should('not.exist')
+    assertRemovedCatalogRows()
   })
 
-  it('shows products and settings only for an admin login', () => {
+  it('shows admin-only Notifications and hosting-origin Settings with token claims', () => {
+    cy.intercept('GET', '**/discovery/api/config', {
+      config_items: [],
+      versions: [],
+      enumerators: [],
+      token: {
+        profile_id: 'profile-e2e',
+        customer_id: 'customer-e2e',
+        mentor_id: 'mentor-e2e',
+      },
+    }).as('getAdminConfig')
     cy.login(['admin'])
     cy.visitPrefixed('/discovery/')
     openDrawer()
 
-    assertAlbHref('nav-products-link', '/discovery/products')
-    assertAlbHref('nav-settings-link', '/admin/settings')
-    cy.get('[data-automation-id="nav-customer-link"]').should('not.exist')
+    assertAlbHref('nav-home-link', '/discovery/')
+    assertAlbHref('nav-events-link', '/discovery/events')
+    assertAlbHref('nav-notifications-link', '/discovery/notifications')
+    cy.get('[data-automation-id="nav-settings-link"]')
+      .should('have.attr', 'href', `${APP_ORIGIN}/discovery/config`)
+      .and(($link) => {
+        const href = $link.attr('href') ?? ''
+        expect(href).to.include(':8398')
+        expect(href).not.to.include(':8080')
+        expect(href).not.to.include('/admin/settings')
+        expect(href).not.to.include('/discovery/discovery')
+      })
+      .click()
+
+    cy.wait('@getAdminConfig')
+    cy.location('origin').should('eq', APP_ORIGIN)
+    cy.location('pathname').should('eq', '/discovery/config')
+    cy.get('[data-automation-id="admin-tab-token"]').click()
+    cy.get('[data-automation-id="admin-token-profile-id-display"]')
+      .find('input')
+      .should('have.value', 'profile-e2e')
+    cy.get('[data-automation-id="admin-token-customer-id-display"]')
+      .find('input')
+      .should('have.value', 'customer-e2e')
+    cy.get('[data-automation-id="admin-token-mentor-id-display"]')
+      .find('input')
+      .should('have.value', 'mentor-e2e')
+
     cy.get('[data-automation-id="nav-resources-link"]').should('not.exist')
+    assertRemovedCatalogRows()
   })
 
-  it('shows only common catalog rows for a mentee-only login', () => {
+  it('shows only Home and Events for a mentee-only login', () => {
     cy.login(['mentee'])
     cy.visitPrefixed('/discovery/')
     openDrawer()
 
     assertAlbHref('nav-home-link', '/discovery/')
-    assertAlbHref('nav-notifications-link', '/discovery/notifications')
-    cy.get('[data-automation-id="nav-customer-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-customer-members-link"]').should('not.exist')
+    assertAlbHref('nav-events-link', '/discovery/events')
+    cy.get('[data-automation-id="nav-notifications-link"]').should('not.exist')
+    cy.get('[data-automation-id="nav-settings-link"]').should('not.exist')
     cy.get('[data-automation-id="nav-resources-link"]').should('not.exist')
     cy.get('[data-automation-id="nav-paths-link"]').should('not.exist')
     cy.get('[data-automation-id="nav-plans-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-products-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-settings-link"]').should('not.exist')
+    assertRemovedCatalogRows()
+  })
+
+  it('serves Events and gates Config by admin role', () => {
+    cy.intercept('GET', '**/discovery/api/cards/events', []).as('getEvents')
+    cy.login(['mentee'])
+    cy.visitPrefixed('/discovery/events')
+    cy.wait('@getEvents')
+    cy.location('pathname').should('eq', '/discovery/events')
+    cy.url().should('not.include', '/discovery/discovery')
+    cy.get('[data-automation-id="discovery-events-empty"]').should('be.visible')
+
+    cy.visitPrefixed('/discovery/config')
+    cy.location('pathname').should('eq', '/discovery/')
+
+    cy.intercept('GET', '**/discovery/api/config', {
+      config_items: [],
+      versions: [],
+      enumerators: [],
+    }).as('getAdminConfig')
+    cy.login(['admin'])
+    cy.visitPrefixed('/discovery/config')
+    cy.wait('@getAdminConfig')
+    cy.location('pathname').should('eq', '/discovery/config')
   })
 
   it('should clear auth and leave for the IdP login URL on logout', () => {
@@ -95,10 +170,17 @@ describe('Navigation Drawer', () => {
     openDrawer()
     cy.get('[data-automation-id="nav-logout-link"]').scrollIntoView().should('be.visible').click()
 
-    // `PageFrame` returns to the ROOT origin, not `/discovery/` (recorded spa_utils limitation),
-    // so only the IdP pathname and the presence of `return_to` are asserted.
     cy.location('pathname', { timeout: 10000 }).should('eq', IDP_STUB_PATHNAME)
-    cy.location('search').should('include', 'return_to=')
+    cy.location('search').then((search) => {
+      const returnTo = new URLSearchParams(search).get('return_to')
+      expect(returnTo, 'logout return_to').not.to.equal(null)
+      const returnUrl = new URL(returnTo!)
+      expect(returnUrl.hostname).to.equal('localhost')
+      expect(returnUrl.port).to.equal('8080')
+      expect(returnUrl.pathname).to.equal('/discovery/')
+      expect(returnUrl.href).not.to.include('127.0.0.1')
+      expect(returnUrl.href).not.to.include('/discovery/discovery')
+    })
     cy.window().then((win) => {
       expect(win.localStorage.getItem('access_token')).to.equal(null)
       expect(win.localStorage.getItem('user_roles')).to.equal(null)

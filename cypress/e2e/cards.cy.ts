@@ -72,6 +72,7 @@ describe('Discovery card grids', () => {
     cy.login()
     const routes = [
       { source: 'home', path: '/discovery/', endpoint: 'cards' },
+      { source: 'events', path: '/discovery/events', endpoint: 'cards/events' },
       { source: 'members', path: '/discovery/members/', endpoint: 'cards/members' },
       { source: 'resources', path: '/discovery/resources', endpoint: 'cards/resources' },
       { source: 'paths', path: '/discovery/paths', endpoint: 'cards/paths' },
@@ -194,13 +195,17 @@ describe('Discovery card grids', () => {
     cy.get('[data-automation-id="discovery-home-empty"]').should('be.visible')
   })
 
-  it('loads the retained admin route for an admin login', () => {
+  it('loads Config as the preferred admin Settings host and retains the admin alias', () => {
     cy.login(['admin'])
-    cy.visitPrefixed('/discovery/admin')
+    cy.visitPrefixed('/discovery/config')
 
-    cy.location('pathname').should('eq', '/discovery/admin')
+    cy.location('pathname').should('eq', '/discovery/config')
     cy.contains('Admin - Configuration').should('be.visible')
     cy.get('[data-automation-id="page-frame-title"]').should('contain.text', 'Discovery')
+
+    cy.visitPrefixed('/discovery/admin')
+    cy.location('pathname').should('eq', '/discovery/admin')
+    cy.contains('Admin - Configuration').should('be.visible')
   })
 
   it('provides Search by Name on non-home CardGrid lists and omits it on Home', () => {
