@@ -135,14 +135,16 @@
 
 <script setup lang="ts">
 import { ListPageSearch } from '@mentor-forge/mentorhub_spa_utils'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Card } from '@/api/types'
 import CardGrid from '@/components/CardGrid.vue'
 import DiscoveryCard from '@/components/DiscoveryCard.vue'
 import { useCards, type CardListSource } from '@/composables/useCards'
 import { useRoles } from '@/composables/useRoles'
+import { cardHref } from '@/utils/cardHref'
 import { createActionHref } from '@/utils/createActionHref'
+import { shouldAutoFollowHomeCards } from '@/utils/homeAutoFollow'
 
 const route = useRoute()
 const source = computed<CardListSource>(() => route.meta.cardSource as CardListSource)
@@ -158,6 +160,8 @@ const showToolbar = computed(
 const {
   data: cards,
   isLoading,
+  isFetching,
+  isSuccess,
   error,
   dismissNotification,
   dismissError,
@@ -166,6 +170,32 @@ const {
   searchQuery,
   debouncedSearch,
 } = useCards(source)
+
+let initialHomeLoadHandled = false
+
+watch(
+  [source, isSuccess, isFetching, cards],
+  ([currentSource, querySucceeded, queryFetching, currentCards]) => {
+    if (currentSource !== 'home') {
+      initialHomeLoadHandled = false
+      return
+    }
+
+    if (!querySucceeded || queryFetching || initialHomeLoadHandled) {
+      return
+    }
+
+    initialHomeLoadHandled = true
+    const href = currentCards?.length === 1
+      ? cardHref(currentCards[0])
+      : undefined
+
+    if (shouldAutoFollowHomeCards(currentSource, currentCards ?? [], href)) {
+      window.open(href, '_self')
+    }
+  },
+  { immediate: true },
+)
 
 const errorMessage = computed(() =>
   error.value instanceof Error ? error.value.message : 'Unable to load cards.',

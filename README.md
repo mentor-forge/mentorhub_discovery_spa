@@ -133,6 +133,8 @@ Uses `@mentor-forge/mentorhub_spa_utils` **1.0.1**. Local nav config is disallow
 
 All eight list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids show exactly one role-gated action: callers with `admin` see **Cancel**, while all other callers see **Dismiss**. Non-Notification cards show neither action. The packaged hamburger's `nav-events-link` targets this SPA's `/discovery/events` route.
 
+After the initial Home query succeeds, a Home result containing exactly one linked card is followed automatically using the same `cardHref` as a card click. This supports the typical mentee experience with no notifications and one mentee card. Other list routes, empty or multi-card Home results, and later Home refetches do not auto-follow.
+
 ### Search and Action Toolbar
 - **Search by Name**: CardGrid lists with a `name` query provide a centered, 300ms-debounced Search by Name input (`ListPageSearch`). Home and Events remain pagination-only and omit the search control.
 - **Typed lists** (`members`, `resources`, `paths`, `plans`, `products`): debounced search becomes an API `?name=` query on `GET /discovery/api/cards/{collection}`. Empty/whitespace search omits `name`.
