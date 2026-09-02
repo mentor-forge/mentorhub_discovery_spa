@@ -162,12 +162,12 @@ describe('DiscoveryCard', () => {
 
   it('opens a linked card with the Enter key', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    const wrapper = mountCard({ _id: 'event-1', link: 'mentee/event/event-1', type: 'Event' })
+    const wrapper = mountCard({ _id: 'path-enter', link: 'mentor/path/path-enter', type: 'Path' })
 
     await wrapper.get('.discovery-card').trigger('keydown', { key: 'Enter' })
 
     expect(open).toHaveBeenCalledWith(
-      expect.stringMatching(/^http:\/\/localhost:8080\/mentee\/event\/event-1$/),
+      expect.stringMatching(/^http:\/\/localhost:8080\/mentor\/path\/path-enter$/),
       '_self',
     )
   })

@@ -54,6 +54,12 @@ const router = createRouter({
       meta: { requiresAuth: true, cardSource: 'notifications', title: 'Notifications' },
     },
     {
+      path: '/notification/:id',
+      name: 'NotificationView',
+      component: () => import('@/pages/NotificationViewPage.vue'),
+      meta: { requiresAuth: true, title: 'Notification' },
+    },
+    {
       path: '/config',
       alias: '/admin',
       name: 'Admin',

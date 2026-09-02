@@ -1,10 +1,13 @@
+/**
+ * Host routing and PageFrame wiring for Discovery.
+ * Hamburger catalog role gates and collection hrefs are covered in spa_utils.
+ */
 describe('Navigation Drawer', () => {
   const APP_ORIGIN = Cypress.config('baseUrl') as string
   const IDP_STUB_PATHNAME = '/login.html'
 
   beforeEach(() => {
-    // Drawer coverage must remain on Discovery Home even when the live API happens
-    // to return the single linked card that Home correctly auto-follows.
+    // Stay on Discovery Home even when the live API returns a single auto-follow card.
     cy.intercept('GET', '**/discovery/api/cards', [])
   })
 
@@ -24,67 +27,18 @@ describe('Navigation Drawer', () => {
     }).as('getIdpLogin')
   }
 
-  const openDrawer = () => {
-    cy.get('[data-automation-id="nav-drawer-toggle"]').should('be.visible').click()
-  }
-
-  const removedCatalogIds = [
-    'nav-products-link',
-    'nav-customer-link',
-    'nav-customer-members-link',
-  ]
-
-  const assertRemovedCatalogRows = () => {
-    removedCatalogIds.forEach((automationId) => {
-      cy.get(`[data-automation-id="${automationId}"]`).should('not.exist')
-    })
-  }
-
-  const assertAlbHref = (automationId: string, pathname: string) => {
-    cy.get(`[data-automation-id="${automationId}"]`)
-      .should(($link) => {
-        const href = $link.attr('href')
-        expect(href).to.eq(`http://localhost:8080${pathname}`)
-        expect(href).not.to.include(':8398')
-        expect(href).not.to.include('/discovery/discovery')
-      })
-  }
-
-  it('renders the mentor catalog with Home and Events on the welcome origin', () => {
-    cy.login(['mentor'])
+  it('shows Discovery PageFrame chrome', () => {
+    cy.login(['mentee'])
     cy.visitPrefixed('/discovery/')
 
     cy.get('[data-automation-id="page-frame-title"]')
       .should('be.visible')
       .and('contain.text', 'Discovery')
-    assertAlbHref('nav-profile-link', '/customer/profile/')
-
-    openDrawer()
-    assertAlbHref('nav-home-link', '/discovery/')
-    assertAlbHref('nav-events-link', '/discovery/events')
-    assertAlbHref('nav-resources-link', '/discovery/resources')
-    assertAlbHref('nav-paths-link', '/discovery/paths')
-    assertAlbHref('nav-plans-link', '/discovery/plans')
-    cy.get('[data-automation-id="nav-notifications-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-settings-link"]').should('not.exist')
-    assertRemovedCatalogRows()
-    cy.get('[data-automation-id="nav-logout-link"]').scrollIntoView().should('be.visible')
+    cy.get('[data-automation-id="nav-drawer-toggle"]').should('be.visible')
+    cy.get('[data-automation-id="nav-profile-link"]').should('be.visible')
   })
 
-  it('shows only Home and Events for a customer login', () => {
-    cy.login(['customer'])
-    cy.visitPrefixed('/discovery/')
-    openDrawer()
-
-    assertAlbHref('nav-home-link', '/discovery/')
-    assertAlbHref('nav-events-link', '/discovery/events')
-    cy.get('[data-automation-id="nav-notifications-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-settings-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-resources-link"]').should('not.exist')
-    assertRemovedCatalogRows()
-  })
-
-  it('shows admin-only Notifications and hosting-origin Settings with token claims', () => {
+  it('hosts Settings at /discovery/config for admin with token claims', () => {
     cy.intercept('GET', '**/discovery/api/config', {
       config_items: [],
       versions: [],
@@ -97,20 +51,10 @@ describe('Navigation Drawer', () => {
     }).as('getAdminConfig')
     cy.login(['admin'])
     cy.visitPrefixed('/discovery/')
-    openDrawer()
+    cy.get('[data-automation-id="nav-drawer-toggle"]').should('be.visible').click()
 
-    assertAlbHref('nav-home-link', '/discovery/')
-    assertAlbHref('nav-events-link', '/discovery/events')
-    assertAlbHref('nav-notifications-link', '/discovery/notifications')
     cy.get('[data-automation-id="nav-settings-link"]')
       .should('have.attr', 'href', `${APP_ORIGIN}/discovery/config`)
-      .and(($link) => {
-        const href = $link.attr('href') ?? ''
-        expect(href).to.include(':8398')
-        expect(href).not.to.include(':8080')
-        expect(href).not.to.include('/admin/settings')
-        expect(href).not.to.include('/discovery/discovery')
-      })
       .click()
 
     cy.wait('@getAdminConfig')
@@ -126,24 +70,6 @@ describe('Navigation Drawer', () => {
     cy.get('[data-automation-id="admin-token-mentor-id-display"]')
       .find('input')
       .should('have.value', 'mentor-e2e')
-
-    cy.get('[data-automation-id="nav-resources-link"]').should('not.exist')
-    assertRemovedCatalogRows()
-  })
-
-  it('shows only Home and Events for a mentee-only login', () => {
-    cy.login(['mentee'])
-    cy.visitPrefixed('/discovery/')
-    openDrawer()
-
-    assertAlbHref('nav-home-link', '/discovery/')
-    assertAlbHref('nav-events-link', '/discovery/events')
-    cy.get('[data-automation-id="nav-notifications-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-settings-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-resources-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-paths-link"]').should('not.exist')
-    cy.get('[data-automation-id="nav-plans-link"]').should('not.exist')
-    assertRemovedCatalogRows()
   })
 
   it('serves Events and gates Config by admin role', () => {
@@ -169,11 +95,22 @@ describe('Navigation Drawer', () => {
     cy.location('pathname').should('eq', '/discovery/config')
   })
 
+  it('renders placeholder text on the notification detail route', () => {
+    cy.login()
+    cy.visitPrefixed('/discovery/notification/665f1c2a9b1e4c0a1b2c3d21')
+    cy.location('pathname').should('eq', '/discovery/notification/665f1c2a9b1e4c0a1b2c3d21')
+    cy.get('[data-automation-id="notification-view-placeholder"]')
+      .should('be.visible')
+      .and('contain.text', 'Notification details will appear here.')
+    cy.get('[data-automation-id="notification-view-id"]')
+      .should('contain.text', '665f1c2a9b1e4c0a1b2c3d21')
+  })
+
   it('should clear auth and leave for the IdP login URL on logout', () => {
     stubIdpLoginUri()
     cy.login(['mentee'])
     cy.visitPrefixed('/discovery/')
-    openDrawer()
+    cy.get('[data-automation-id="nav-drawer-toggle"]').should('be.visible').click()
     cy.get('[data-automation-id="nav-logout-link"]').scrollIntoView().should('be.visible').click()
 
     cy.location('pathname', { timeout: 10000 }).should('eq', IDP_STUB_PATHNAME)

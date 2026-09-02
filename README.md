@@ -129,6 +129,7 @@ Uses `@mentor-forge/mentorhub_spa_utils` **1.0.2**. Local nav config is disallow
 - `/plans` — encounter Plan cards
 - `/products` — product cards
 - `/notifications` — notification cards
+- `/notification/:id` — notification detail placeholder (API `link` `discovery/notification/{id}`)
 - `/config` (also `/admin`) — admin Settings host for the packaged `AdminPage`: Token, Config Items, Versions, and Enumerators
 
 All eight list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids show exactly one role-gated action: callers with `admin` see **Cancel**, while all other callers see **Dismiss**. Non-Notification cards show neither action. The packaged hamburger's `nav-events-link` targets this SPA's `/discovery/events` route.
@@ -183,10 +184,12 @@ After the initial Home query succeeds, a Home result containing exactly one link
 
 All interactive elements in this SPA include `data-automation-id` attributes following the `{domain}-{page}-{element}` naming convention.
 
-Cypress targets spa_utils `PageFrame` ids for chrome, not local ones:
+Cypress targets spa_utils `PageFrame` ids for chrome, not local ones. Hamburger catalog
+role gates and collection hrefs are tested in spa_utils — this SPA only asserts host chrome
+and routes:
 
-- Always present when authenticated: `nav-drawer-toggle`, `page-frame-title`, `nav-profile-link`, `nav-home-link`, `nav-events-link`, `nav-logout-link`
-- Role-gated examples: `nav-resources-link` (mentor), `nav-notifications-link` / `nav-settings-link` (admin)
+- Always present when authenticated: `nav-drawer-toggle`, `page-frame-title`, `nav-profile-link`
+- This SPA hosts Settings at `/discovery/config` (`nav-settings-link`, admin-only)
 
 Do not define host `nav-*` ids in this SPA.
 
