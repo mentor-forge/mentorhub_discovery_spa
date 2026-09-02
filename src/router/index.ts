@@ -11,6 +11,12 @@ const router = createRouter({
       meta: { requiresAuth: true, cardSource: 'home', title: 'Home' },
     },
     {
+      path: '/events',
+      name: 'Events',
+      component: () => import('@/pages/DiscoveryHomePage.vue'),
+      meta: { requiresAuth: true, cardSource: 'events', title: 'Events' },
+    },
+    {
       path: '/members',
       alias: '/members/',
       name: 'Members',
@@ -48,7 +54,14 @@ const router = createRouter({
       meta: { requiresAuth: true, cardSource: 'notifications', title: 'Notifications' },
     },
     {
-      path: '/admin',
+      path: '/notification/:id',
+      name: 'NotificationView',
+      component: () => import('@/pages/NotificationViewPage.vue'),
+      meta: { requiresAuth: true, title: 'Notification' },
+    },
+    {
+      path: '/config',
+      alias: '/admin',
       name: 'Admin',
       component: () => import('@/pages/AdminPage.vue'),
       meta: { requiresAuth: true, requiresRole: 'admin' },

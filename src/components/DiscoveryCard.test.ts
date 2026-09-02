@@ -1,8 +1,16 @@
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, type Slots } from 'vue'
+import { computed, defineComponent, h, type Slots } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Card } from '@/api/types'
 import DiscoveryCard from './DiscoveryCard.vue'
+
+const roleState = vi.hoisted(() => ({ roles: [] as string[] }))
+
+vi.mock('@/composables/useRoles', () => ({
+  useRoles: () => ({
+    hasRole: (role: string) => computed(() => roleState.roles.includes(role)),
+  }),
+}))
 
 const MhCardStub = defineComponent({
   name: 'MhCard',
@@ -46,6 +54,24 @@ const VIconStub = defineComponent({
   },
 })
 
+const VTooltipStub = defineComponent({
+  name: 'VTooltip',
+  props: {
+    text: { type: String, default: '' },
+    location: { type: String, default: '' },
+  },
+  setup(props, { slots }) {
+    return () =>
+      h('span', { 'data-tooltip': props.text, 'data-location': props.location }, [
+        slots.activator?.({
+          props: {
+            'aria-describedby': 'type-tooltip',
+          },
+        }),
+      ])
+  },
+})
+
 const VBtnStub = defineComponent({
   name: 'VBtn',
   setup(_, { attrs }) {
@@ -53,13 +79,15 @@ const VBtnStub = defineComponent({
   },
 })
 
-function mountCard(card: Card) {
+function mountCard(card: Card, roles: string[] = []) {
+  roleState.roles = roles
   return mount(DiscoveryCard, {
     props: { card },
     global: {
       stubs: {
         MhCard: MhCardStub,
         VIcon: VIconStub,
+        VTooltip: VTooltipStub,
         VBtn: VBtnStub,
       },
     },
@@ -85,8 +113,27 @@ describe('DiscoveryCard', () => {
       .toBe('Vue Guide')
     expect(wrapper.get('[data-automation-id="discovery-card-resource-1-type-icon"]').attributes('data-icon'))
       .toBe('mdi-book-open-page-variant')
+    expect(wrapper.get('[data-tooltip="Resource"]').attributes('data-location')).toBe('top')
+    expect(wrapper.get('[data-automation-id="discovery-card-resource-1-type-icon"]').classes())
+      .toContain('discovery-card__type-icon')
+    expect(wrapper.get('[data-automation-id="discovery-card-resource-1-type-icon"]').attributes('aria-label'))
+      .toBe('Resource card')
+    expect(wrapper.get('[data-automation-id="discovery-card-resource-1-type-icon"]').attributes('aria-describedby'))
+      .toBe('type-tooltip')
     expect(wrapper.get('[data-automation-id="discovery-card-resource-1-body-display"] strong').text())
       .toBe('guide')
+  })
+
+  it.each([
+    ['missing', undefined],
+    ['empty', ''],
+  ])('uses a sensible icon hint and accessible name when type is %s', (_, type) => {
+    const wrapper = mountCard({ _id: 'untyped-1', type: type as Card['type'] })
+    const icon = wrapper.get('[data-automation-id="discovery-card-untyped-1-type-icon"]')
+
+    expect(wrapper.get('[data-tooltip="Card"]').exists()).toBe(true)
+    expect(icon.attributes('aria-label')).toBe('Card')
+    expect(icon.attributes('data-icon')).toBe('mdi-card-text-outline')
   })
 
   it('opens a linked card from either its title or body', async () => {
@@ -95,7 +142,7 @@ describe('DiscoveryCard', () => {
       _id: 'path-1',
       name: 'Path',
       description: 'Body',
-      link: '/paths/path-1',
+      link: 'mentor/path/path-1',
       type: 'Path',
     })
 
@@ -108,24 +155,24 @@ describe('DiscoveryCard', () => {
     expect(open).toHaveBeenCalledTimes(2)
     expect(open).toHaveBeenNthCalledWith(
       1,
-      expect.stringMatching(/^http:\/\/localhost:8080\/mentor\/paths\/path-1$/),
+      expect.stringMatching(/^http:\/\/localhost:8080\/mentor\/path\/path-1$/),
       '_self',
     )
   })
 
   it('opens a linked card with the Enter key', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    const wrapper = mountCard({ _id: 'event-1', link: '/events/event-1', type: 'Event' })
+    const wrapper = mountCard({ _id: 'path-enter', link: 'mentor/path/path-enter', type: 'Path' })
 
     await wrapper.get('.discovery-card').trigger('keydown', { key: 'Enter' })
 
     expect(open).toHaveBeenCalledWith(
-      expect.stringMatching(/^http:\/\/localhost:8080\/mentee\/events\/event-1$/),
+      expect.stringMatching(/^http:\/\/localhost:8080\/mentor\/path\/path-enter$/),
       '_self',
     )
   })
 
-  it('emits dismiss for a Notification without following its link', async () => {
+  it('shows Dismiss only for a non-admin Notification and does not follow its link', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
     const card: Card = {
       _id: 'notification-1',
@@ -135,6 +182,8 @@ describe('DiscoveryCard', () => {
     }
     const wrapper = mountCard(card)
 
+    expect(wrapper.find('[data-automation-id="discovery-card-notification-1-cancel-button"]').exists())
+      .toBe(false)
     await wrapper.get('[data-automation-id="discovery-card-notification-1-dismiss-button"]')
       .trigger('click')
 
@@ -142,19 +191,48 @@ describe('DiscoveryCard', () => {
     expect(open).not.toHaveBeenCalled()
   })
 
-  it('composes a welcome URL and does not render undefined when link is missing', async () => {
+  it('shows Cancel only for an admin Notification and does not follow its link', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const card: Card = {
+      _id: 'notification-2',
+      name: 'Reminder',
+      link: '/reminders/2',
+      type: 'Notification',
+    }
+    const wrapper = mountCard(card, ['admin'])
+
+    expect(wrapper.find('[data-automation-id="discovery-card-notification-2-dismiss-button"]').exists())
+      .toBe(false)
+    await wrapper.get('[data-automation-id="discovery-card-notification-2-cancel-button"]')
+      .trigger('click')
+
+    expect(wrapper.emitted('cancel')).toEqual([[card]])
+    expect(open).not.toHaveBeenCalled()
+  })
+
+  it('shows neither notification control on a non-Notification card', () => {
+    const wrapper = mountCard({
+      _id: 'resource-2',
+      name: 'Guide',
+      type: 'Resource',
+    }, ['admin'])
+
+    expect(wrapper.find('[data-automation-id="discovery-card-resource-2-dismiss-button"]').exists())
+      .toBe(false)
+    expect(wrapper.find('[data-automation-id="discovery-card-resource-2-cancel-button"]').exists())
+      .toBe(false)
+  })
+
+  it('does not follow a card when the API omitted link', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
     const wrapper = mountCard({ name: 'Unlinked' })
 
     await wrapper.get('.discovery-card').trigger('click')
 
-    expect(wrapper.get('.discovery-card').attributes('role')).toBe('link')
-    expect(wrapper.get('.discovery-card').attributes('tabindex')).toBe('0')
+    expect(wrapper.get('.discovery-card').attributes('role')).toBeUndefined()
+    expect(wrapper.get('.discovery-card').attributes('tabindex')).toBeUndefined()
     expect(wrapper.get('[data-automation-id="discovery-card-unknown-body-display"]').text()).toBe('')
     expect(wrapper.html()).not.toContain('undefined')
-    expect(open).toHaveBeenCalledWith(
-      expect.stringMatching(/^http:\/\/localhost:8080\/customer\/$/),
-      '_self',
-    )
+    expect(open).not.toHaveBeenCalled()
   })
 })

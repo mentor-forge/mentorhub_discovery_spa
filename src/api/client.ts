@@ -97,6 +97,16 @@ export const api = {
     })
   },
 
+  async getEventCards(
+    offset = DEFAULT_OFFSET,
+    size = DEFAULT_SIZE
+  ): Promise<Card[]> {
+    return request<Card[]>('/cards/events', {
+      method: 'GET',
+      headers: paginationHeaders(offset, size),
+    })
+  },
+
   async getMemberCards(
     offset = DEFAULT_OFFSET,
     size = DEFAULT_SIZE,
@@ -165,6 +175,13 @@ export const api = {
   async dismissNotification(notificationId: string): Promise<Notification> {
     return request<Notification>(
       `/notification/dismiss/${encodeURIComponent(notificationId)}`,
+      { method: 'POST' }
+    )
+  },
+
+  async cancelNotification(notificationId: string): Promise<Notification> {
+    return request<Notification>(
+      `/notification/cancel/${encodeURIComponent(notificationId)}`,
       { method: 'POST' }
     )
   },

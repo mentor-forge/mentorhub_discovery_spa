@@ -16,9 +16,9 @@ type LocationLike = AlbOriginLocation | Pick<Location, 'protocol' | 'hostname' |
 const ACTION_TARGETS: Record<CreateAction, { journey: 'customer' | 'mentor'; path: string }> = {
   inviteMember: { journey: 'customer', path: 'members/' },
   inviteCoordinator: { journey: 'customer', path: 'coordinators/' },
-  newResource: { journey: 'mentor', path: 'resources/' },
-  newPath: { journey: 'mentor', path: 'paths/' },
-  newPlan: { journey: 'mentor', path: 'plans/' },
+  newResource: { journey: 'mentor', path: 'resource' },
+  newPath: { journey: 'mentor', path: 'path' },
+  newPlan: { journey: 'mentor', path: 'plan' },
 }
 
 /**

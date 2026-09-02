@@ -72,13 +72,13 @@ npm run container
 
 | Layer | Owns |
 |-------|------|
-| **This SPA** | Collection/list CardGrid browsing (home, members, resources, paths, plans, products, notifications), Discovery page state, Discovery API client, Search by Name / role-gated create toolbar presentation, card deep-link composition |
-| **`spa_utils` 1.0.0** | Auth/JWT bootstrap, IdP redirect, `PageFrame` chrome, role-gated hamburger catalog, `buildJourneyUrl` / ALB origin rules, `ListPageSearch`, `CardGrid` / `MhCard` |
+| **This SPA** | Local `CardGrid` layout and collection/list browsing (home, events, members, resources, paths, plans, products, notifications), Discovery page state, Discovery API client, Search by Name / role-gated create toolbar presentation |
+| **`spa_utils` 1.0.2** | Auth/JWT bootstrap, IdP redirect, `PageFrame` chrome, role-gated hamburger catalog, `buildJourneyUrl` / ALB origin rules, `ListPageSearch`, `MhCard` chrome |
 | **Customer / Mentor / Admin / Mentee SPAs** | Detail, edit, and create pages that Discovery cards and Invite/New buttons target |
 | **nginx (this container)** | `/discovery/` document prefix, SPA history fallback, `/discovery/api/` → `discovery_api`, dual runtime-config paths, cache headers |
-| **Discovery API** | Authorization enforcement, card list filtering, notification dismiss |
+| **Discovery API** | Authorization enforcement, card list filtering, notification dismiss and cancel, Card `type` and relative `link` projection |
 
-Uses `@mentor-forge/mentorhub_spa_utils` **1.0.0**. Local nav config is disallowed — do not pass `navItems`, URL maps, or ALB origins to `PageFrame`. Cross-SPA hrefs are absolute welcome/ALB `:8080` URLs from `buildJourneyUrl`, never direct debug ports (`:8398`, etc.).
+Uses `@mentor-forge/mentorhub_spa_utils` **1.0.2**. Local nav config is disallowed — do not pass `navItems`, URL maps, or ALB origins to `PageFrame`. Cross-SPA hrefs are absolute welcome/ALB `:8080` URLs from `buildJourneyUrl`, never direct debug ports (`:8398`, etc.).
 
 ### Prohibited patterns
 - Hosting detail/edit/create pages that belong to another journey SPA
@@ -105,8 +105,12 @@ Uses `@mentor-forge/mentorhub_spa_utils` **1.0.0**. Local nav config is disallow
 - Router guards protect routes requiring authentication
 
 ### Layout and navigation
-- The root layout uses `PageFrame` from `@mentor-forge/mentorhub_spa_utils` 1.0.0 as the shared app bar, role-gated navigation drawer, profile link, and logout shell.
+- The root layout uses `PageFrame` from `@mentor-forge/mentorhub_spa_utils` 1.0.2 as the shared app bar, role-gated navigation drawer, profile link, and logout shell.
 - Discovery passes `pageTitle="Discovery"` and renders its router view in the default slot. The universal navigation catalog and cross-SPA links are owned by spa_utils, not configured locally.
+- The 1.0.2 hamburger catalog contains Home, Resources, and Paths for any authenticated user. Plans is mentor-only. Notifications, Events, and Settings are admin-only. Settings stays on the hosting origin (with no `:8080` rewrite) and lands on this SPA's `/config` route.
+- Discovery owns its local responsive `CardGrid` layout because it is the only
+  journey SPA hosting card dashboards. `spa_utils` continues to own `MhCard`,
+  `PageFrame`, and `ListPageSearch`.
 
 ### API Client
 - Located in `src/api/client.ts`
@@ -118,35 +122,42 @@ Uses `@mentor-forge/mentorhub_spa_utils` **1.0.0**. Local nav config is disallow
 
 ### Routes
 - `/` — composite Home card grid from `GET /discovery/api/cards`
+- `/events` — Event cards from `GET /discovery/api/cards/events`; public URL `/discovery/events`
 - `/members` (also `/members/`) — member cards
 - `/resources` — learning Resource cards
 - `/paths` — learning Path cards
 - `/plans` — encounter Plan cards
 - `/products` — product cards
 - `/notifications` — notification cards
-- `/admin` — existing configuration page for users with the `admin` role
+- `/notification/:id` — notification detail placeholder (API `link` `discovery/notification/{id}`)
+- `/config` (also `/admin`) — admin Settings host for the packaged `AdminPage`: Token, Config Items, Versions, and Enumerators
 
-All seven list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids can be dismissed.
+All eight list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids show exactly one role-gated action: callers with `admin` see **Cancel**, while all other callers see **Dismiss**. Non-Notification cards show neither action. The packaged hamburger's `nav-events-link` targets this SPA's `/discovery/events` route.
+
+After the initial Home query succeeds, a Home result containing exactly one linked card is followed automatically using the same `cardHref` as a card click. This supports the typical mentee experience with no notifications and one mentee card. Other list routes, empty or multi-card Home results, and later Home refetches do not auto-follow.
 
 ### Search and Action Toolbar
-- **Search by Name**: All non-home CardGrid lists provide a centered, 300ms-debounced Search by Name input (`ListPageSearch`). The Home composite dashboard remains pagination-only and omits the search control.
+- **Search by Name**: CardGrid lists with a `name` query provide a centered, 300ms-debounced Search by Name input (`ListPageSearch`). Home and Events remain pagination-only and omit the search control.
 - **Typed lists** (`members`, `resources`, `paths`, `plans`, `products`): debounced search becomes an API `?name=` query on `GET /discovery/api/cards/{collection}`. Empty/whitespace search omits `name`.
+- **Events** (contract-driven exception): the API has no `name` query, so the Events request stays pagination-only and the page does not show Search by Name.
 - **Notifications** (intentional exception): Search by Name filters the already-loaded page **client-side** with a case-insensitive `card.name` contains match. The notifications list request stays pagination-only and must **not** receive `name=`. Do not invent an API filter that the contract does not own.
 - **Home Invites**: The Home toolbar displays right-aligned invitation actions based on caller roles:
   - `Invite Member` (visible when roles contain `coordinator`) → Customer SPA members create page (`/customer/members/`)
   - `Invite Coordinator` (visible when roles contain `customer`) → Customer SPA coordinators create page (`/customer/coordinators/`)
 - **Collection Create**: Typed catalog pages provide right-aligned create buttons for mentors:
-  - `New Resource` (on `/resources` when roles contain `mentor`) → Mentor SPA resources create page (`/mentor/resources/`)
-  - `New Path` (on `/paths` when roles contain `mentor`) → Mentor SPA paths create page (`/mentor/paths/`)
-  - `New Plan` (on `/plans` when roles contain `mentor`) → Mentor SPA plans create page (`/mentor/plans/`)
-- All cross-SPA create and invite hrefs use `createActionHref` → spa_utils `buildJourneyUrl` (`/{journey}/{domain}/` with trailing slash, no `/new` segment). Owning SPAs host those create pages; Discovery only composes the destination.
+  - `New Resource` (on `/resources` when roles contain `mentor`) → Mentor SPA resource create page (`/mentor/resource`)
+  - `New Path` (on `/paths` when roles contain `mentor`) → Mentor SPA path create page (`/mentor/path`)
+  - `New Plan` (on `/plans` when roles contain `mentor`) → Mentor SPA plan create page (`/mentor/plan`)
+- Invite and New hrefs use `createActionHref` → spa_utils `buildJourneyUrl`. Owning SPAs host those create pages; Discovery only prefixes the destination. Invite paths keep a trailing slash (`/customer/members/`, `/customer/coordinators/`); Mentor create pages are singular (`/mentor/resource`, `/mentor/path`, `/mentor/plan`) with no `/new` segment.
 
 ### Cross-SPA card links
 - Discovery remains the only host for the CardGrid list dashboards; Customer, Admin,
   Mentor, and Mentee SPAs own their detail, edit, and create pages.
-- Card targets for those pages are composed with spa_utils `buildJourneyUrl`,
-  `resolveAlbOrigin`, and `JOURNEY_APP_PATHS`. Direct Vite/debug-port links are
-  rewritten through the welcome/ALB origin (`:8080` in Developer Edition).
+- Card click targets come from Discovery API `link` (`mentor/path/{id}`,
+  `mentee/resource/{id}`, `mentor/mentee/{id}`, `admin/settings`, …). The SPA only
+  prefixes that relative path with spa_utils `buildJourneyUrl` / `resolveAlbOrigin`.
+  It does not infer a destination from `type` or `_id`. Direct Vite/debug-port links
+  are rewritten through the welcome/ALB origin (`:8080` in Developer Edition).
 - Absolute HTTP(S) learning-resource links outside Mentor Hub are kept unchanged.
 
 ## Testing
@@ -160,17 +171,25 @@ All seven list routes share one CardGrid page and load the first 20 cards using 
 ### E2E Tests
 - Cypress against the packaged SPA on `http://localhost:8398` (`npm run service` must be running; do not run `npm run dev` at the same time)
 - Prefer `cy.visitPrefixed(...)` over raw `cy.visit` for in-app routes — it asserts `PerformanceNavigationTiming` so a Vue Router rewrite cannot mask an un-prefixed document fetch
-- Specs cover CardGrid catalogs, Search by Name (API-backed vs notifications client-side), role-gated Invite/New buttons (positive and negative), spa_utils `PageFrame` chrome, and the nginx deployment boundary (`deployment.cy.ts`: redirects, history fallback, cache headers, dual runtime-config, authenticated and unauthenticated `/discovery/api` proxy)
+- Specs cover CardGrid catalogs and wide equal-height/full-track layout, Resource/Event
+  type-icon hints, exclusive role-gated Notification Dismiss/Cancel actions and
+  POST paths, one-card versus multi-card Home auto-follow, Search by Name
+  (API-backed vs notifications client-side), role-gated Invite/New buttons
+  (positive and negative), spa_utils `PageFrame` chrome, and the nginx deployment
+  boundary (`deployment.cy.ts`: redirects, history fallback, cache headers, dual
+  runtime-config, authenticated and unauthenticated `/discovery/api` proxy)
 - UI role gating is UX; API authorization is proven separately via Bearer requests through `/discovery/api/`
 
 ## Automation Support
 
 All interactive elements in this SPA include `data-automation-id` attributes following the `{domain}-{page}-{element}` naming convention.
 
-Cypress targets spa_utils `PageFrame` ids for chrome, not local ones:
+Cypress targets spa_utils `PageFrame` ids for chrome, not local ones. Hamburger catalog
+role gates and collection hrefs are tested in spa_utils — this SPA only asserts host chrome
+and routes:
 
-- Always present when authenticated: `nav-drawer-toggle`, `page-frame-title`, `nav-profile-link`, `nav-home-link`, `nav-notifications-link`, `nav-logout-link`
-- Role-gated examples: `nav-resources-link` (mentor), `nav-products-link` / `nav-settings-link` (admin), `nav-customer-link` (customer)
+- Always present when authenticated: `nav-drawer-toggle`, `page-frame-title`, `nav-profile-link`
+- This SPA hosts Settings at `/discovery/config` (`nav-settings-link`, admin-only)
 
 Do not define host `nav-*` ids in this SPA.
 

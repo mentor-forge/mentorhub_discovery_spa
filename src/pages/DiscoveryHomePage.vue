@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <v-container fluid>
     <h1
       class="text-h4 mb-4"
       :data-automation-id="`discovery-${source}-heading`"
@@ -8,14 +8,14 @@
     </h1>
 
     <v-row
-      v-if="source !== 'home' || hasRole('coordinator').value || hasRole('customer').value"
+      v-if="showToolbar"
       align="center"
       class="mb-4"
       :data-automation-id="`discovery-${source}-toolbar`"
     >
       <v-col cols="12" sm="3" class="d-none d-sm-flex" />
       <v-col cols="12" sm="6" class="d-flex justify-center">
-        <div v-if="source !== 'home'" class="w-100" style="max-width: 480px;">
+        <div v-if="showSearch" class="w-100" style="max-width: 480px;">
           <ListPageSearch
             :searchable="true"
             :search-query="searchQuery"
@@ -108,6 +108,7 @@
         :key="card._id ?? `${card.type}-${card.name}`"
         :card="card"
         @dismiss="handleDismiss"
+        @cancel="handleCancel"
       >
       </DiscoveryCard>
     </CardGrid>
@@ -120,32 +121,81 @@
     >
       {{ dismissErrorMessage }}
     </v-alert>
+
+    <v-alert
+      v-if="cancelError"
+      class="mt-4"
+      type="error"
+      :data-automation-id="`discovery-${source}-cancel-error`"
+    >
+      {{ cancelErrorMessage }}
+    </v-alert>
   </v-container>
 </template>
 
 <script setup lang="ts">
-import { CardGrid, ListPageSearch } from '@mentor-forge/mentorhub_spa_utils'
-import { computed } from 'vue'
+import { ListPageSearch } from '@mentor-forge/mentorhub_spa_utils'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Card } from '@/api/types'
+import CardGrid from '@/components/CardGrid.vue'
 import DiscoveryCard from '@/components/DiscoveryCard.vue'
 import { useCards, type CardListSource } from '@/composables/useCards'
 import { useRoles } from '@/composables/useRoles'
+import { cardHref } from '@/utils/cardHref'
 import { createActionHref } from '@/utils/createActionHref'
+import { shouldAutoFollowHomeCards } from '@/utils/homeAutoFollow'
 
 const route = useRoute()
 const source = computed<CardListSource>(() => route.meta.cardSource as CardListSource)
 const pageTitle = computed(() => route.meta.title as string)
 const { hasRole } = useRoles()
+const showSearch = computed(() => source.value !== 'home' && source.value !== 'events')
+const showToolbar = computed(
+  () =>
+    showSearch.value ||
+    (source.value === 'home' &&
+      (hasRole('coordinator').value || hasRole('customer').value)),
+)
 const {
   data: cards,
   isLoading,
+  isFetching,
+  isSuccess,
   error,
   dismissNotification,
   dismissError,
+  cancelNotification,
+  cancelError,
   searchQuery,
   debouncedSearch,
 } = useCards(source)
+
+let initialHomeLoadHandled = false
+
+watch(
+  [source, isSuccess, isFetching, cards],
+  ([currentSource, querySucceeded, queryFetching, currentCards]) => {
+    if (currentSource !== 'home') {
+      initialHomeLoadHandled = false
+      return
+    }
+
+    if (!querySucceeded || queryFetching || initialHomeLoadHandled) {
+      return
+    }
+
+    initialHomeLoadHandled = true
+    const href = currentCards?.length === 1
+      ? cardHref(currentCards[0])
+      : undefined
+
+    if (shouldAutoFollowHomeCards(currentSource, currentCards ?? [], href)) {
+      window.open(href, '_self')
+    }
+  },
+  { immediate: true },
+)
 
 const errorMessage = computed(() =>
   error.value instanceof Error ? error.value.message : 'Unable to load cards.',
@@ -155,6 +205,11 @@ const dismissErrorMessage = computed(() =>
     ? dismissError.value.message
     : 'Unable to dismiss notification.',
 )
+const cancelErrorMessage = computed(() =>
+  cancelError.value instanceof Error
+    ? cancelError.value.message
+    : 'Unable to cancel notification.',
+)
 
 async function handleDismiss(card: Card) {
   if (!card._id) {
@@ -163,6 +218,18 @@ async function handleDismiss(card: Card) {
 
   try {
     await dismissNotification(card._id)
+  } catch {
+    // The mutation error is rendered above.
+  }
+}
+
+async function handleCancel(card: Card) {
+  if (!card._id) {
+    return
+  }
+
+  try {
+    await cancelNotification(card._id)
   } catch {
     // The mutation error is rendered above.
   }

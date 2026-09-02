@@ -13,13 +13,28 @@
       :automation-id="automationId"
     >
       <template #actions>
-        <v-icon
-          :icon="appearance.icon"
-          :aria-label="card.type ? `${card.type} card` : 'Card'"
-          :data-automation-id="`${automationId}-type-icon`"
+        <v-tooltip :text="typeHint" location="top">
+          <template #activator="{ props: tooltipProps }">
+            <v-icon
+              v-bind="tooltipProps"
+              class="discovery-card__type-icon"
+              :icon="appearance.icon"
+              :aria-label="card.type ? `${card.type} card` : 'Card'"
+              :data-automation-id="`${automationId}-type-icon`"
+            />
+          </template>
+        </v-tooltip>
+        <v-btn
+          v-if="card.type === 'Notification' && isAdmin"
+          icon="mdi-cancel"
+          variant="text"
+          size="small"
+          aria-label="Cancel notification"
+          :data-automation-id="`${automationId}-cancel-button`"
+          @click.stop="emit('cancel', card)"
         />
         <v-btn
-          v-if="card.type === 'Notification'"
+          v-else-if="card.type === 'Notification'"
           icon="mdi-close"
           variant="text"
           size="small"
@@ -40,6 +55,7 @@
 import { MhCard } from '@mentor-forge/mentorhub_spa_utils'
 import { computed } from 'vue'
 import type { Card } from '@/api/types'
+import { useRoles } from '@/composables/useRoles'
 import { cardAppearance } from '@/utils/cardAppearance'
 import { cardHref } from '@/utils/cardHref'
 import MarkdownView from './MarkdownView.vue'
@@ -52,10 +68,14 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   dismiss: [card: Card]
+  cancel: [card: Card]
 }>()
 
+const { hasRole } = useRoles()
+const isAdmin = hasRole('admin')
 const appearance = computed(() => cardAppearance(props.card.type))
 const automationId = computed(() => `discovery-card-${props.card._id ?? 'unknown'}`)
+const typeHint = computed(() => props.card.type || 'Card')
 const href = computed(() => cardHref(props.card))
 const hasLink = computed(() => Boolean(href.value))
 
@@ -67,7 +87,19 @@ function openLink() {
 </script>
 
 <style scoped>
+.discovery-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+}
+
 .discovery-card--linked {
   cursor: pointer;
+}
+
+.discovery-card__type-icon {
+  padding-right: 8px;
 }
 </style>

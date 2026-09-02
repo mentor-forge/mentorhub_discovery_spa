@@ -9,6 +9,7 @@ import { useCards, type CardListSource } from './useCards'
 vi.mock('@/api/client', () => ({
   api: {
     getHomeCards: vi.fn(),
+    getEventCards: vi.fn(),
     getMemberCards: vi.fn(),
     getResourceCards: vi.fn(),
     getPathCards: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock('@/api/client', () => ({
     getProductCards: vi.fn(),
     getNotificationCards: vi.fn(),
     dismissNotification: vi.fn(),
+    cancelNotification: vi.fn(),
   },
 }))
 
@@ -51,6 +53,7 @@ describe('useCards', () => {
 
   it.each([
     ['home', 'getHomeCards'],
+    ['events', 'getEventCards'],
     ['members', 'getMemberCards'],
     ['resources', 'getResourceCards'],
     ['paths', 'getPathCards'],
@@ -87,6 +90,32 @@ describe('useCards', () => {
     await composable.dismissNotification('notification-1')
 
     expect(api.dismissNotification).toHaveBeenCalledWith('notification-1')
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['cards'] })
+
+    wrapper.unmount()
+    queryClient.clear()
+  })
+
+  it('cancels a notification and invalidates every card query', async () => {
+    vi.mocked(api.getHomeCards).mockResolvedValue(cards)
+    vi.mocked(api.cancelNotification).mockResolvedValue({
+      _id: 'notification-1',
+      cancelled: {
+        from_ip: '127.0.0.1',
+        by_user: 'test-admin',
+        at_time: '2026-09-01T20:00:00Z',
+        correlation_id: 'test-correlation-id',
+      },
+    })
+    const { composable, queryClient, wrapper } = mountCards('home')
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
+
+    await vi.waitFor(() => {
+      expect(composable.isSuccess.value).toBe(true)
+    })
+    await composable.cancelNotification('notification-1')
+
+    expect(api.cancelNotification).toHaveBeenCalledWith('notification-1')
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['cards'] })
 
     wrapper.unmount()
@@ -162,6 +191,31 @@ describe('useCards', () => {
       await vi.advanceTimersByTimeAsync(300)
 
       expect(api.getHomeCards).toHaveBeenCalledWith(0, 20)
+
+      wrapper.unmount()
+      queryClient.clear()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps events pagination-only with the events query key', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(api.getEventCards).mockResolvedValue(cards)
+      const { composable, queryClient, wrapper } = mountCards('events')
+
+      await vi.waitFor(() => {
+        expect(composable.isSuccess.value).toBe(true)
+      })
+
+      expect(queryClient.getQueryData(['cards', 'events'])).toEqual(cards)
+      composable.debouncedSearch('ignored-term')
+      await vi.advanceTimersByTimeAsync(300)
+
+      expect(api.getEventCards).toHaveBeenCalledOnce()
+      expect(api.getEventCards).toHaveBeenCalledWith(0, 20)
+      expect(queryClient.getQueryData(['cards', 'events', 'ignored-term'])).toBeUndefined()
 
       wrapper.unmount()
       queryClient.clear()
