@@ -76,7 +76,7 @@ npm run container
 | **`spa_utils` 1.0.1** | Auth/JWT bootstrap, IdP redirect, `PageFrame` chrome, role-gated hamburger catalog, `buildJourneyUrl` / ALB origin rules, `ListPageSearch`, `MhCard` chrome |
 | **Customer / Mentor / Admin / Mentee SPAs** | Detail, edit, and create pages that Discovery cards and Invite/New buttons target |
 | **nginx (this container)** | `/discovery/` document prefix, SPA history fallback, `/discovery/api/` → `discovery_api`, dual runtime-config paths, cache headers |
-| **Discovery API** | Authorization enforcement, card list filtering, notification dismiss |
+| **Discovery API** | Authorization enforcement, card list filtering, notification dismiss and cancel |
 
 Uses `@mentor-forge/mentorhub_spa_utils` **1.0.1**. Local nav config is disallowed — do not pass `navItems`, URL maps, or ALB origins to `PageFrame`. Cross-SPA hrefs are absolute welcome/ALB `:8080` URLs from `buildJourneyUrl`, never direct debug ports (`:8398`, etc.).
 
@@ -131,7 +131,7 @@ Uses `@mentor-forge/mentorhub_spa_utils` **1.0.1**. Local nav config is disallow
 - `/notifications` — notification cards
 - `/config` (also `/admin`) — admin Settings host for the packaged `AdminPage`: Token, Config Items, Versions, and Enumerators
 
-All eight list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids can be dismissed. The packaged hamburger's `nav-events-link` targets this SPA's `/discovery/events` route.
+All eight list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids show exactly one role-gated action: callers with `admin` see **Cancel**, while all other callers see **Dismiss**. Non-Notification cards show neither action. The packaged hamburger's `nav-events-link` targets this SPA's `/discovery/events` route.
 
 ### Search and Action Toolbar
 - **Search by Name**: CardGrid lists with a `name` query provide a centered, 300ms-debounced Search by Name input (`ListPageSearch`). Home and Events remain pagination-only and omit the search control.

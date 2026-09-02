@@ -97,6 +97,11 @@ export function useCards(source: MaybeRefOrGetter<CardListSource>) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
   })
 
+  const cancelMutation = useMutation({
+    mutationFn: (notificationId: string) => api.cancelNotification(notificationId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
+  })
+
   return {
     ...cardsQuery,
     searchQuery,
@@ -104,5 +109,8 @@ export function useCards(source: MaybeRefOrGetter<CardListSource>) {
     dismissNotification: dismissMutation.mutateAsync,
     isDismissing: dismissMutation.isPending,
     dismissError: dismissMutation.error,
+    cancelNotification: cancelMutation.mutateAsync,
+    isCancelling: cancelMutation.isPending,
+    cancelError: cancelMutation.error,
   }
 }

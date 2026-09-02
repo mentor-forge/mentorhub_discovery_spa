@@ -178,6 +178,13 @@ export const api = {
       { method: 'POST' }
     )
   },
+
+  async cancelNotification(notificationId: string): Promise<Notification> {
+    return request<Notification>(
+      `/notification/cancel/${encodeURIComponent(notificationId)}`,
+      { method: 'POST' }
+    )
+  },
 }
 
 export { ApiError }

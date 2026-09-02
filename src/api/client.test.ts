@@ -248,10 +248,45 @@ describe('API Client', () => {
     })
   })
 
+  describe('Notification cancel', () => {
+    it('should post without a body, authenticate, and return the Notification document', async () => {
+      localStorage.setItem('access_token', 'test-token')
+      const notification: Notification = {
+        _id: '665f1c2a9b1e4c0a1b2c3d4e',
+        name: 'welcome',
+        message: 'Welcome to Mentor Hub',
+        status: 'active',
+        cancelled: {
+          from_ip: '127.0.0.1',
+          by_user: 'test-admin',
+          at_time: '2026-09-01T20:00:00Z',
+          correlation_id: 'test-correlation-id',
+        },
+      }
+      mockFetch.mockResolvedValueOnce(jsonResponse(notification))
+
+      const result = await api.cancelNotification(notification._id!)
+
+      expect(result).toEqual(notification)
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/discovery/api/notification/cancel/665f1c2a9b1e4c0a1b2c3d4e',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer test-token',
+          },
+        }
+      )
+      expect(mockFetch.mock.calls[0][1]).not.toHaveProperty('body')
+    })
+  })
+
   describe('401 Unauthorized Handling', () => {
     const mockLogout = vi.fn()
 
     beforeEach(() => {
+      mockLogout.mockClear()
       localStorage.setItem('access_token', 'invalid-token')
       localStorage.setItem('token_expires_at', '2026-12-31T23:59:59Z')
       localStorage.setItem('user_roles', JSON.stringify(['admin']))
@@ -275,6 +310,22 @@ describe('API Client', () => {
       } catch {
         // Error is expected to be thrown
       }
+
+      expect(mockLogout).toHaveBeenCalledOnce()
+      expect(redirectToIdpLogin).toHaveBeenCalledOnce()
+    })
+
+    it('should clear session and redirect when cancel returns 401', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({ error: 'Invalid token' })
+      })
+
+      await expect(api.cancelNotification('665f1c2a9b1e4c0a1b2c3d4e')).rejects.toMatchObject({
+        status: 401,
+      })
 
       expect(mockLogout).toHaveBeenCalledOnce()
       expect(redirectToIdpLogin).toHaveBeenCalledOnce()

@@ -25,7 +25,16 @@
           </template>
         </v-tooltip>
         <v-btn
-          v-if="card.type === 'Notification'"
+          v-if="card.type === 'Notification' && isAdmin"
+          icon="mdi-cancel"
+          variant="text"
+          size="small"
+          aria-label="Cancel notification"
+          :data-automation-id="`${automationId}-cancel-button`"
+          @click.stop="emit('cancel', card)"
+        />
+        <v-btn
+          v-else-if="card.type === 'Notification'"
           icon="mdi-close"
           variant="text"
           size="small"
@@ -46,6 +55,7 @@
 import { MhCard } from '@mentor-forge/mentorhub_spa_utils'
 import { computed } from 'vue'
 import type { Card } from '@/api/types'
+import { useRoles } from '@/composables/useRoles'
 import { cardAppearance } from '@/utils/cardAppearance'
 import { cardHref } from '@/utils/cardHref'
 import MarkdownView from './MarkdownView.vue'
@@ -58,8 +68,11 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   dismiss: [card: Card]
+  cancel: [card: Card]
 }>()
 
+const { hasRole } = useRoles()
+const isAdmin = hasRole('admin')
 const appearance = computed(() => cardAppearance(props.card.type))
 const automationId = computed(() => `discovery-card-${props.card._id ?? 'unknown'}`)
 const typeHint = computed(() => props.card.type || 'Card')

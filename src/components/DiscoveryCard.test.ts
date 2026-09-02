@@ -1,8 +1,16 @@
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, type Slots } from 'vue'
+import { computed, defineComponent, h, type Slots } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Card } from '@/api/types'
 import DiscoveryCard from './DiscoveryCard.vue'
+
+const roleState = vi.hoisted(() => ({ roles: [] as string[] }))
+
+vi.mock('@/composables/useRoles', () => ({
+  useRoles: () => ({
+    hasRole: (role: string) => computed(() => roleState.roles.includes(role)),
+  }),
+}))
 
 const MhCardStub = defineComponent({
   name: 'MhCard',
@@ -71,7 +79,8 @@ const VBtnStub = defineComponent({
   },
 })
 
-function mountCard(card: Card) {
+function mountCard(card: Card, roles: string[] = []) {
+  roleState.roles = roles
   return mount(DiscoveryCard, {
     props: { card },
     global: {
@@ -163,7 +172,7 @@ describe('DiscoveryCard', () => {
     )
   })
 
-  it('emits dismiss for a Notification without following its link', async () => {
+  it('shows Dismiss only for a non-admin Notification and does not follow its link', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
     const card: Card = {
       _id: 'notification-1',
@@ -173,11 +182,45 @@ describe('DiscoveryCard', () => {
     }
     const wrapper = mountCard(card)
 
+    expect(wrapper.find('[data-automation-id="discovery-card-notification-1-cancel-button"]').exists())
+      .toBe(false)
     await wrapper.get('[data-automation-id="discovery-card-notification-1-dismiss-button"]')
       .trigger('click')
 
     expect(wrapper.emitted('dismiss')).toEqual([[card]])
     expect(open).not.toHaveBeenCalled()
+  })
+
+  it('shows Cancel only for an admin Notification and does not follow its link', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const card: Card = {
+      _id: 'notification-2',
+      name: 'Reminder',
+      link: '/reminders/2',
+      type: 'Notification',
+    }
+    const wrapper = mountCard(card, ['admin'])
+
+    expect(wrapper.find('[data-automation-id="discovery-card-notification-2-dismiss-button"]').exists())
+      .toBe(false)
+    await wrapper.get('[data-automation-id="discovery-card-notification-2-cancel-button"]')
+      .trigger('click')
+
+    expect(wrapper.emitted('cancel')).toEqual([[card]])
+    expect(open).not.toHaveBeenCalled()
+  })
+
+  it('shows neither notification control on a non-Notification card', () => {
+    const wrapper = mountCard({
+      _id: 'resource-2',
+      name: 'Guide',
+      type: 'Resource',
+    }, ['admin'])
+
+    expect(wrapper.find('[data-automation-id="discovery-card-resource-2-dismiss-button"]').exists())
+      .toBe(false)
+    expect(wrapper.find('[data-automation-id="discovery-card-resource-2-cancel-button"]').exists())
+      .toBe(false)
   })
 
   it('composes a welcome URL and does not render undefined when link is missing', async () => {

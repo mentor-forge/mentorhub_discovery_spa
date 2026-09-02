@@ -108,6 +108,7 @@
         :key="card._id ?? `${card.type}-${card.name}`"
         :card="card"
         @dismiss="handleDismiss"
+        @cancel="handleCancel"
       >
       </DiscoveryCard>
     </CardGrid>
@@ -119,6 +120,15 @@
       :data-automation-id="`discovery-${source}-dismiss-error`"
     >
       {{ dismissErrorMessage }}
+    </v-alert>
+
+    <v-alert
+      v-if="cancelError"
+      class="mt-4"
+      type="error"
+      :data-automation-id="`discovery-${source}-cancel-error`"
+    >
+      {{ cancelErrorMessage }}
     </v-alert>
   </v-container>
 </template>
@@ -151,6 +161,8 @@ const {
   error,
   dismissNotification,
   dismissError,
+  cancelNotification,
+  cancelError,
   searchQuery,
   debouncedSearch,
 } = useCards(source)
@@ -163,6 +175,11 @@ const dismissErrorMessage = computed(() =>
     ? dismissError.value.message
     : 'Unable to dismiss notification.',
 )
+const cancelErrorMessage = computed(() =>
+  cancelError.value instanceof Error
+    ? cancelError.value.message
+    : 'Unable to cancel notification.',
+)
 
 async function handleDismiss(card: Card) {
   if (!card._id) {
@@ -171,6 +188,18 @@ async function handleDismiss(card: Card) {
 
   try {
     await dismissNotification(card._id)
+  } catch {
+    // The mutation error is rendered above.
+  }
+}
+
+async function handleCancel(card: Card) {
+  if (!card._id) {
+    return
+  }
+
+  try {
+    await cancelNotification(card._id)
   } catch {
     // The mutation error is rendered above.
   }
