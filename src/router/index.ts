@@ -48,7 +48,8 @@ const router = createRouter({
       meta: { requiresAuth: true, cardSource: 'notifications', title: 'Notifications' },
     },
     {
-      path: '/admin',
+      path: '/config',
+      alias: '/admin',
       name: 'Admin',
       component: () => import('@/pages/AdminPage.vue'),
       meta: { requiresAuth: true, requiresRole: 'admin' },

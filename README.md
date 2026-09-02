@@ -107,7 +107,7 @@ Uses `@mentor-forge/mentorhub_spa_utils` **1.0.1**. Local nav config is disallow
 ### Layout and navigation
 - The root layout uses `PageFrame` from `@mentor-forge/mentorhub_spa_utils` 1.0.1 as the shared app bar, role-gated navigation drawer, profile link, and logout shell.
 - Discovery passes `pageTitle="Discovery"` and renders its router view in the default slot. The universal navigation catalog and cross-SPA links are owned by spa_utils, not configured locally.
-- The 1.0.1 hamburger catalog contains Home, Events, Resources, Paths, and Plans. Notifications and Settings are admin-only. Settings stays on the hosting SPA and will land on this SPA's `/config` route once F027 ships.
+- The 1.0.1 hamburger catalog contains Home, Events, Resources, Paths, and Plans. Notifications and Settings are admin-only. Settings stays on the hosting origin (with no `:8080` rewrite) and lands on this SPA's `/config` route.
 
 ### API Client
 - Located in `src/api/client.ts`
@@ -125,7 +125,7 @@ Uses `@mentor-forge/mentorhub_spa_utils` **1.0.1**. Local nav config is disallow
 - `/plans` — encounter Plan cards
 - `/products` — product cards
 - `/notifications` — notification cards
-- `/admin` — existing configuration page for users with the `admin` role
+- `/config` (also `/admin`) — admin Settings host for the packaged `AdminPage`: Token, Config Items, Versions, and Enumerators
 
 All seven list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids can be dismissed.
 
