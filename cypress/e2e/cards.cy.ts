@@ -16,6 +16,19 @@ function assertJourneyCreateHref(href: string | undefined, expectedPathname: str
   expect(url.href).not.to.include('/discovery/discovery')
 }
 
+function visitHomeWithOpenStub() {
+  cy.visit('/discovery/', {
+    onBeforeLoad(win) {
+      cy.stub(win, 'open').as('openCardLink')
+    },
+  })
+  cy.window().then((win) => {
+    const [navigation] = win.performance.getEntriesByType('navigation')
+    expect(new URL(navigation.name).pathname, 'document URL actually fetched')
+      .to.equal('/discovery/')
+  })
+}
+
 describe('Discovery card grids', () => {
   beforeEach(() => {
     cy.intercept('GET', '**/discovery/api/config', emptyConfig)
@@ -66,6 +79,104 @@ describe('Discovery card grids', () => {
       .should('have.attr', 'aria-label', 'Resource card')
     cy.get('[data-automation-id="discovery-card-path-markdown-type-icon"]')
       .should('have.attr', 'aria-label', 'Path card')
+  })
+
+  it('stretches unequal cards to equal-height rows and fills wide grid tracks', () => {
+    cy.viewport(1440, 900)
+    cy.login(['mentor'])
+    cy.intercept('GET', '**/discovery/api/cards/resources*', [
+      {
+        _id: 'layout-short',
+        name: 'Short card',
+        description: 'One line.',
+        type: 'Resource',
+      },
+      {
+        _id: 'layout-medium',
+        name: 'Medium card',
+        description: 'A medium card.\n\nWith another paragraph.',
+        type: 'Resource',
+      },
+      {
+        _id: 'layout-long',
+        name: 'Long card',
+        description: 'A much longer card.\n\nSecond paragraph.\n\nThird paragraph with more text.',
+        type: 'Resource',
+      },
+      {
+        _id: 'layout-fourth',
+        name: 'Fourth card',
+        description: 'Another short card.',
+        type: 'Resource',
+      },
+    ]).as('getLayoutCards')
+
+    cy.visitPrefixed('/discovery/resources')
+    cy.wait('@getLayoutCards')
+
+    cy.get('[data-automation-id="discovery-resources-grid"]').then(($grid) => {
+      const columns = getComputedStyle($grid[0]).gridTemplateColumns.split(' ')
+      expect(columns.length, 'wide viewport column count').to.be.at.least(3)
+    })
+
+    cy.get('[data-automation-id="discovery-resources-grid"] > .mh-card-grid__item')
+      .then(($items) => {
+        const firstRowTop = $items[0].getBoundingClientRect().top
+        const firstRow = [...$items].filter(
+          (item) => Math.abs(item.getBoundingClientRect().top - firstRowTop) < 1,
+        )
+        expect(firstRow.length, 'cards in first visual row').to.be.at.least(3)
+
+        const heights = firstRow.map((item) => item.getBoundingClientRect().height)
+        heights.forEach((height) => {
+          expect(height, 'equal first-row card height').to.be.closeTo(heights[0], 0.5)
+        })
+
+        firstRow.forEach((item) => {
+          const trackWidth = item.getBoundingClientRect().width
+          const card = item.querySelector<HTMLElement>('.discovery-card')
+          const mhCard = item.querySelector<HTMLElement>('.mh-card')
+          expect(card, 'DiscoveryCard wrapper').not.to.equal(null)
+          expect(mhCard, 'MhCard').not.to.equal(null)
+          expect(card!.getBoundingClientRect().width, 'wrapper fills grid track')
+            .to.be.closeTo(trackWidth, 0.5)
+          expect(mhCard!.getBoundingClientRect().width, 'MhCard fills grid track')
+            .to.be.closeTo(trackWidth, 0.5)
+        })
+      })
+  })
+
+  it('shows Resource and Event type hints on icon hover', () => {
+    cy.login()
+    cy.intercept('GET', '**/discovery/api/cards', [
+      {
+        _id: 'resource-hint',
+        name: 'Resource hint',
+        description: 'Resource.',
+        type: 'Resource',
+      },
+      {
+        _id: 'event-hint',
+        name: 'Event hint',
+        description: 'Event.',
+        type: 'Event',
+      },
+    ]).as('getHintCards')
+
+    cy.visitPrefixed('/discovery/')
+    cy.wait('@getHintCards')
+
+    cy.get('[data-automation-id="discovery-card-resource-hint-type-icon"]')
+      .should('have.attr', 'aria-label', 'Resource card')
+      .trigger('mouseenter')
+    cy.contains('.v-overlay__content', /^Resource$/).should('be.visible')
+    cy.get('[data-automation-id="discovery-card-resource-hint-type-icon"]')
+      .trigger('mouseleave')
+
+    cy.get('[data-automation-id="discovery-card-event-hint-type-icon"]')
+      .should('have.attr', 'aria-label', 'Event card')
+      .trigger('mouseenter')
+    cy.contains('.v-overlay__content', /^Event$/).should('be.visible')
   })
 
   it('visits every CardGrid route and accepts empty states', () => {
@@ -154,9 +265,9 @@ describe('Discovery card grids', () => {
     })
   })
 
-  it('dismisses a linked Notification without navigating and removes it after refetch', () => {
-    cy.login()
-    let homeCards = [
+  it('lets a non-admin dismiss but not cancel without following the card link', () => {
+    cy.login(['mentee'])
+    let notifications = [
       {
         _id: 'notification-dismiss',
         name: 'Dismiss me',
@@ -166,11 +277,11 @@ describe('Discovery card grids', () => {
       },
     ]
 
-    cy.intercept('GET', '**/discovery/api/cards', (request) => {
-      request.reply(homeCards)
-    }).as('getHomeCards')
+    cy.intercept('GET', '**/discovery/api/cards/notifications*', (request) => {
+      request.reply(notifications)
+    }).as('getNotifications')
     cy.intercept('POST', '**/discovery/api/notification/dismiss/notification-dismiss', (request) => {
-      homeCards = []
+      notifications = []
       request.reply({
         statusCode: 200,
         body: {
@@ -181,18 +292,121 @@ describe('Discovery card grids', () => {
       })
     }).as('dismissNotification')
 
-    cy.visitPrefixed('/discovery/')
-    cy.wait('@getHomeCards')
+    cy.visitPrefixed('/discovery/notifications')
+    cy.wait('@getNotifications')
+    cy.window().then((win) => {
+      cy.stub(win, 'open').as('openCardLink')
+    })
+    cy.get('[data-automation-id="discovery-card-notification-dismiss-dismiss-button"]')
+      .should('be.visible')
+    cy.get('[data-automation-id="discovery-card-notification-dismiss-cancel-button"]')
+      .should('not.exist')
     cy.get('[data-automation-id="discovery-card-notification-dismiss-dismiss-button"]')
       .click()
     cy.wait('@dismissNotification')
       .its('request.method')
       .should('eq', 'POST')
-    cy.wait('@getHomeCards')
+    cy.wait('@getNotifications')
 
-    cy.location('pathname').should('eq', '/discovery/')
+    cy.get('@openCardLink').should('not.have.been.called')
+    cy.location('pathname').should('eq', '/discovery/notifications')
     cy.get('[data-automation-id="discovery-card-notification-dismiss"]').should('not.exist')
-    cy.get('[data-automation-id="discovery-home-empty"]').should('be.visible')
+    cy.get('[data-automation-id="discovery-notifications-empty"]').should('be.visible')
+  })
+
+  it('lets an admin cancel but not dismiss without following the card link', () => {
+    cy.login(['admin'])
+    let notifications = [
+      {
+        _id: 'notification-cancel',
+        name: 'Cancel me',
+        description: 'An admin notification.',
+        link: '/must-not-navigate',
+        type: 'Notification',
+      },
+    ]
+
+    cy.intercept('GET', '**/discovery/api/cards/notifications*', (request) => {
+      request.reply(notifications)
+    }).as('getAdminNotifications')
+    cy.intercept('POST', '**/discovery/api/notification/cancel/notification-cancel', (request) => {
+      notifications = []
+      request.reply({
+        statusCode: 200,
+        body: {
+          _id: 'notification-cancel',
+          name: 'Cancel me',
+          status: 'archived',
+        },
+      })
+    }).as('cancelNotification')
+
+    cy.visitPrefixed('/discovery/notifications')
+    cy.wait('@getAdminNotifications')
+    cy.window().then((win) => {
+      cy.stub(win, 'open').as('openCardLink')
+    })
+    cy.get('[data-automation-id="discovery-card-notification-cancel-cancel-button"]')
+      .should('be.visible')
+    cy.get('[data-automation-id="discovery-card-notification-cancel-dismiss-button"]')
+      .should('not.exist')
+    cy.get('[data-automation-id="discovery-card-notification-cancel-cancel-button"]')
+      .click()
+    cy.wait('@cancelNotification')
+      .its('request.method')
+      .should('eq', 'POST')
+    cy.wait('@getAdminNotifications')
+
+    cy.get('@openCardLink').should('not.have.been.called')
+    cy.location('pathname').should('eq', '/discovery/notifications')
+    cy.get('[data-automation-id="discovery-card-notification-cancel"]').should('not.exist')
+    cy.get('[data-automation-id="discovery-notifications-empty"]').should('be.visible')
+  })
+
+  it('auto-follows exactly one linked Home card through its cardHref', () => {
+    cy.login(['mentee'])
+    cy.intercept('GET', '**/discovery/api/cards', [
+      {
+        _id: 'single-journey',
+        name: 'Single journey',
+        description: 'Continue the journey.',
+        link: '/mentee/events/single-journey',
+        type: 'Event',
+      },
+    ]).as('getSingleHomeCard')
+
+    visitHomeWithOpenStub()
+    cy.wait('@getSingleHomeCard')
+    cy.get('@openCardLink').should(
+      'have.been.calledOnceWith',
+      'http://localhost:8080/mentee/events/single-journey',
+      '_self',
+    )
+  })
+
+  it('keeps a two-card Home result in the grid without auto-following', () => {
+    cy.login(['mentee'])
+    cy.intercept('GET', '**/discovery/api/cards', [
+      {
+        _id: 'first-home-card',
+        name: 'First journey',
+        link: '/mentee/events/first-home-card',
+        type: 'Event',
+      },
+      {
+        _id: 'second-home-card',
+        name: 'Second journey',
+        link: '/mentor/resources/second-home-card',
+        type: 'Resource',
+      },
+    ]).as('getTwoHomeCards')
+
+    visitHomeWithOpenStub()
+    cy.wait('@getTwoHomeCards')
+    cy.get('@openCardLink').should('not.have.been.called')
+    cy.get('[data-automation-id="discovery-card-first-home-card"]').should('be.visible')
+    cy.get('[data-automation-id="discovery-card-second-home-card"]').should('be.visible')
+    cy.location('pathname').should('eq', '/discovery/')
   })
 
   it('loads Config as the preferred admin Settings host and retains the admin alias', () => {

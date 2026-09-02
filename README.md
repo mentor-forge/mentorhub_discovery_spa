@@ -168,7 +168,13 @@ After the initial Home query succeeds, a Home result containing exactly one link
 ### E2E Tests
 - Cypress against the packaged SPA on `http://localhost:8398` (`npm run service` must be running; do not run `npm run dev` at the same time)
 - Prefer `cy.visitPrefixed(...)` over raw `cy.visit` for in-app routes — it asserts `PerformanceNavigationTiming` so a Vue Router rewrite cannot mask an un-prefixed document fetch
-- Specs cover CardGrid catalogs, Search by Name (API-backed vs notifications client-side), role-gated Invite/New buttons (positive and negative), spa_utils `PageFrame` chrome, and the nginx deployment boundary (`deployment.cy.ts`: redirects, history fallback, cache headers, dual runtime-config, authenticated and unauthenticated `/discovery/api` proxy)
+- Specs cover CardGrid catalogs and wide equal-height/full-track layout, Resource/Event
+  type-icon hints, exclusive role-gated Notification Dismiss/Cancel actions and
+  POST paths, one-card versus multi-card Home auto-follow, Search by Name
+  (API-backed vs notifications client-side), role-gated Invite/New buttons
+  (positive and negative), spa_utils `PageFrame` chrome, and the nginx deployment
+  boundary (`deployment.cy.ts`: redirects, history fallback, cache headers, dual
+  runtime-config, authenticated and unauthenticated `/discovery/api` proxy)
 - UI role gating is UX; API authorization is proven separately via Bearer requests through `/discovery/api/`
 
 ## Automation Support

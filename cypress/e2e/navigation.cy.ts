@@ -2,6 +2,12 @@ describe('Navigation Drawer', () => {
   const APP_ORIGIN = Cypress.config('baseUrl') as string
   const IDP_STUB_PATHNAME = '/login.html'
 
+  beforeEach(() => {
+    // Drawer coverage must remain on Discovery Home even when the live API happens
+    // to return the single linked card that Home correctly auto-follows.
+    cy.intercept('GET', '**/discovery/api/cards', [])
+  })
+
   /** Point the container's IdP at a same-origin stub: the real value may be a cross-origin
    *  Tailscale MagicDNS host, and `runtime-config.js` is the highest-priority source. */
   function stubIdpLoginUri() {
