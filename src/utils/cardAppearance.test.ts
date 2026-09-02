@@ -3,30 +3,42 @@ import type { CardType } from '@/api/types'
 import { cardAppearance } from './cardAppearance'
 
 describe('cardAppearance', () => {
-  it.each<CardType>([
-    'Event',
-    'Member',
-    'Mentee',
-    'Notification',
-    'Path',
-    'Plan',
-    'Resource',
-  ])('maps %s to an icon and color', (type) => {
+  it.each<[CardType, string]>([
+    ['Customer', 'mdi-domain'],
+    ['Coordinator', 'mdi-account-tie'],
+    ['Member', 'mdi-account-group'],
+    ['Mentee', 'mdi-school'],
+    ['Products', 'mdi-package-variant'],
+    ['Discounts', 'mdi-tag-percent'],
+    ['Logs', 'mdi-text-box-search'],
+    ['Resource', 'mdi-book-open-page-variant'],
+    ['Path', 'mdi-map-marker-path'],
+    ['Plan', 'mdi-clipboard-text'],
+    ['Journey', 'mdi-routes'],
+    ['Notification', 'mdi-bell'],
+    ['Event', 'mdi-calendar'],
+  ])('maps %s to its locked icon', (type, icon) => {
     const appearance = cardAppearance(type)
 
-    expect(appearance.icon).toMatch(/^mdi-/)
+    expect(appearance.icon).toBe(icon)
     expect(appearance.color).toBeTruthy()
   })
 
   it('uses distinct appearances for every known card type', () => {
     const types: CardType[] = [
-      'Event',
+      'Customer',
+      'Coordinator',
       'Member',
       'Mentee',
-      'Notification',
+      'Products',
+      'Discounts',
+      'Logs',
+      'Resource',
       'Path',
       'Plan',
-      'Resource',
+      'Journey',
+      'Notification',
+      'Event',
     ]
     const appearances = types.map((type) => cardAppearance(type))
 

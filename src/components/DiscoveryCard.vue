@@ -13,11 +13,17 @@
       :automation-id="automationId"
     >
       <template #actions>
-        <v-icon
-          :icon="appearance.icon"
-          :aria-label="card.type ? `${card.type} card` : 'Card'"
-          :data-automation-id="`${automationId}-type-icon`"
-        />
+        <v-tooltip :text="typeHint" location="top">
+          <template #activator="{ props: tooltipProps }">
+            <v-icon
+              v-bind="tooltipProps"
+              class="discovery-card__type-icon"
+              :icon="appearance.icon"
+              :aria-label="card.type ? `${card.type} card` : 'Card'"
+              :data-automation-id="`${automationId}-type-icon`"
+            />
+          </template>
+        </v-tooltip>
         <v-btn
           v-if="card.type === 'Notification'"
           icon="mdi-close"
@@ -56,6 +62,7 @@ const emit = defineEmits<{
 
 const appearance = computed(() => cardAppearance(props.card.type))
 const automationId = computed(() => `discovery-card-${props.card._id ?? 'unknown'}`)
+const typeHint = computed(() => props.card.type || 'Card')
 const href = computed(() => cardHref(props.card))
 const hasLink = computed(() => Boolean(href.value))
 
@@ -77,5 +84,9 @@ function openLink() {
 
 .discovery-card--linked {
   cursor: pointer;
+}
+
+.discovery-card__type-icon {
+  padding-right: 8px;
 }
 </style>

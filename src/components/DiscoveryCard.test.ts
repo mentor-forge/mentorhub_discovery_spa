@@ -46,6 +46,24 @@ const VIconStub = defineComponent({
   },
 })
 
+const VTooltipStub = defineComponent({
+  name: 'VTooltip',
+  props: {
+    text: { type: String, default: '' },
+    location: { type: String, default: '' },
+  },
+  setup(props, { slots }) {
+    return () =>
+      h('span', { 'data-tooltip': props.text, 'data-location': props.location }, [
+        slots.activator?.({
+          props: {
+            'aria-describedby': 'type-tooltip',
+          },
+        }),
+      ])
+  },
+})
+
 const VBtnStub = defineComponent({
   name: 'VBtn',
   setup(_, { attrs }) {
@@ -60,6 +78,7 @@ function mountCard(card: Card) {
       stubs: {
         MhCard: MhCardStub,
         VIcon: VIconStub,
+        VTooltip: VTooltipStub,
         VBtn: VBtnStub,
       },
     },
@@ -85,8 +104,27 @@ describe('DiscoveryCard', () => {
       .toBe('Vue Guide')
     expect(wrapper.get('[data-automation-id="discovery-card-resource-1-type-icon"]').attributes('data-icon'))
       .toBe('mdi-book-open-page-variant')
+    expect(wrapper.get('[data-tooltip="Resource"]').attributes('data-location')).toBe('top')
+    expect(wrapper.get('[data-automation-id="discovery-card-resource-1-type-icon"]').classes())
+      .toContain('discovery-card__type-icon')
+    expect(wrapper.get('[data-automation-id="discovery-card-resource-1-type-icon"]').attributes('aria-label'))
+      .toBe('Resource card')
+    expect(wrapper.get('[data-automation-id="discovery-card-resource-1-type-icon"]').attributes('aria-describedby'))
+      .toBe('type-tooltip')
     expect(wrapper.get('[data-automation-id="discovery-card-resource-1-body-display"] strong').text())
       .toBe('guide')
+  })
+
+  it.each([
+    ['missing', undefined],
+    ['empty', ''],
+  ])('uses a sensible icon hint and accessible name when type is %s', (_, type) => {
+    const wrapper = mountCard({ _id: 'untyped-1', type: type as Card['type'] })
+    const icon = wrapper.get('[data-automation-id="discovery-card-untyped-1-type-icon"]')
+
+    expect(wrapper.get('[data-tooltip="Card"]').exists()).toBe(true)
+    expect(icon.attributes('aria-label')).toBe('Card')
+    expect(icon.attributes('data-icon')).toBe('mdi-card-text-outline')
   })
 
   it('opens a linked card from either its title or body', async () => {

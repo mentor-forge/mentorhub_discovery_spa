@@ -5,13 +5,19 @@ export interface Error {
 }
 
 export type CardType =
-  | 'Event'
+  | 'Customer'
+  | 'Coordinator'
   | 'Member'
   | 'Mentee'
-  | 'Notification'
+  | 'Products'
+  | 'Discounts'
+  | 'Logs'
+  | 'Resource'
   | 'Path'
   | 'Plan'
-  | 'Resource'
+  | 'Journey'
+  | 'Notification'
+  | 'Event'
 
 export interface Card {
   _id?: string
