@@ -4,7 +4,7 @@ import type { CardListSource } from '@/composables/useCards'
 import { shouldAutoFollowHomeCards } from './homeAutoFollow'
 
 const linkedCard: Card = { _id: 'mentee-1', type: 'Mentee' }
-const linkedHref = 'http://127.0.0.1:8080/mentor/mentees/mentee-1'
+const linkedHref = 'http://127.0.0.1:8080/mentor/mentee/mentee-1'
 
 describe('shouldAutoFollowHomeCards', () => {
   it.each([

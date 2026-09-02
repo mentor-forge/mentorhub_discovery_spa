@@ -72,11 +72,11 @@ npm run container
 
 | Layer | Owns |
 |-------|------|
-| **This SPA** | Local `CardGrid` layout and collection/list browsing (home, events, members, resources, paths, plans, products, notifications), Discovery page state, Discovery API client, Search by Name / role-gated create toolbar presentation, card deep-link composition |
+| **This SPA** | Local `CardGrid` layout and collection/list browsing (home, events, members, resources, paths, plans, products, notifications), Discovery page state, Discovery API client, Search by Name / role-gated create toolbar presentation |
 | **`spa_utils` 1.0.2** | Auth/JWT bootstrap, IdP redirect, `PageFrame` chrome, role-gated hamburger catalog, `buildJourneyUrl` / ALB origin rules, `ListPageSearch`, `MhCard` chrome |
 | **Customer / Mentor / Admin / Mentee SPAs** | Detail, edit, and create pages that Discovery cards and Invite/New buttons target |
 | **nginx (this container)** | `/discovery/` document prefix, SPA history fallback, `/discovery/api/` → `discovery_api`, dual runtime-config paths, cache headers |
-| **Discovery API** | Authorization enforcement, card list filtering, notification dismiss and cancel |
+| **Discovery API** | Authorization enforcement, card list filtering, notification dismiss and cancel, Card `type` and relative `link` projection |
 
 Uses `@mentor-forge/mentorhub_spa_utils` **1.0.2**. Local nav config is disallowed — do not pass `navItems`, URL maps, or ALB origins to `PageFrame`. Cross-SPA hrefs are absolute welcome/ALB `:8080` URLs from `buildJourneyUrl`, never direct debug ports (`:8398`, etc.).
 
@@ -144,17 +144,19 @@ After the initial Home query succeeds, a Home result containing exactly one link
   - `Invite Member` (visible when roles contain `coordinator`) → Customer SPA members create page (`/customer/members/`)
   - `Invite Coordinator` (visible when roles contain `customer`) → Customer SPA coordinators create page (`/customer/coordinators/`)
 - **Collection Create**: Typed catalog pages provide right-aligned create buttons for mentors:
-  - `New Resource` (on `/resources` when roles contain `mentor`) → Mentor SPA resources create page (`/mentor/resources/`)
-  - `New Path` (on `/paths` when roles contain `mentor`) → Mentor SPA paths create page (`/mentor/paths/`)
-  - `New Plan` (on `/plans` when roles contain `mentor`) → Mentor SPA plans create page (`/mentor/plans/`)
-- All cross-SPA create and invite hrefs use `createActionHref` → spa_utils `buildJourneyUrl` (`/{journey}/{domain}/` with trailing slash, no `/new` segment). Owning SPAs host those create pages; Discovery only composes the destination.
+  - `New Resource` (on `/resources` when roles contain `mentor`) → Mentor SPA resource create page (`/mentor/resource`)
+  - `New Path` (on `/paths` when roles contain `mentor`) → Mentor SPA path create page (`/mentor/path`)
+  - `New Plan` (on `/plans` when roles contain `mentor`) → Mentor SPA plan create page (`/mentor/plan`)
+- Invite and New hrefs use `createActionHref` → spa_utils `buildJourneyUrl`. Owning SPAs host those create pages; Discovery only prefixes the destination. Invite paths keep a trailing slash (`/customer/members/`, `/customer/coordinators/`); Mentor create pages are singular (`/mentor/resource`, `/mentor/path`, `/mentor/plan`) with no `/new` segment.
 
 ### Cross-SPA card links
 - Discovery remains the only host for the CardGrid list dashboards; Customer, Admin,
   Mentor, and Mentee SPAs own their detail, edit, and create pages.
-- Card targets for those pages are composed with spa_utils `buildJourneyUrl`,
-  `resolveAlbOrigin`, and `JOURNEY_APP_PATHS`. Direct Vite/debug-port links are
-  rewritten through the welcome/ALB origin (`:8080` in Developer Edition).
+- Card click targets come from Discovery API `link` (`mentor/path/{id}`,
+  `mentee/resource/{id}`, `mentor/mentee/{id}`, `admin/settings`, …). The SPA only
+  prefixes that relative path with spa_utils `buildJourneyUrl` / `resolveAlbOrigin`.
+  It does not infer a destination from `type` or `_id`. Direct Vite/debug-port links
+  are rewritten through the welcome/ALB origin (`:8080` in Developer Edition).
 - Absolute HTTP(S) learning-resource links outside Mentor Hub are kept unchanged.
 
 ## Testing

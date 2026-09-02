@@ -7,16 +7,15 @@ describe('createActionHref', () => {
   it.each([
     ['inviteMember', '/customer/members/'],
     ['inviteCoordinator', '/customer/coordinators/'],
-    ['newResource', '/mentor/resources/'],
-    ['newPath', '/mentor/paths/'],
-    ['newPlan', '/mentor/plans/'],
+    ['newResource', '/mentor/resource'],
+    ['newPath', '/mentor/path'],
+    ['newPlan', '/mentor/plan'],
   ] as const)('resolves %s to %s through the welcome origin', (action: CreateAction, expectedPath: string) => {
     const href = createActionHref(action, debugLocation)
 
     expect(href).toBe(`http://127.0.0.1:8080${expectedPath}`)
     expect(href).not.toMatch(/:(?:8398|8388|8392|8394)\b/)
     expect(href).not.toContain('/new')
-    expect(href.endsWith('/')).toBe(true)
   })
 
   it('resolves href without explicit location argument', () => {

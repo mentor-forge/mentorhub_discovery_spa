@@ -10,7 +10,7 @@ function assertJourneyCreateHref(href: string | undefined, expectedPathname: str
   const url = new URL(href!)
   expect(url.port).to.equal('8080')
   expect(url.pathname).to.equal(expectedPathname)
-  expect(url.pathname.endsWith('/')).to.equal(true)
+  expect(url.pathname.endsWith('/')).to.equal(expectedPathname.endsWith('/'))
   expect(url.pathname).not.to.include('/new')
   expect(url.href).not.to.include(':8398')
   expect(url.href).not.to.include('/discovery/discovery')
@@ -212,25 +212,25 @@ describe('Discovery card grids', () => {
       {
         _id: 'customer-target',
         name: 'Customer member',
-        link: '/customer/members/customer-target',
+        link: 'customer/profile/customer-target',
         type: 'Member',
       },
       {
         _id: 'admin-target',
         name: 'Admin product',
-        link: '/admin/products/admin-target',
-        type: 'Resource',
+        link: 'admin/settings',
+        type: 'Products',
       },
       {
         _id: 'mentor-target',
         name: 'Mentor path',
-        link: '/mentor/paths/mentor-target',
+        link: 'mentor/path/mentor-target',
         type: 'Path',
       },
       {
         _id: 'mentee-target',
         name: 'Mentee event',
-        link: '/mentee/events/mentee-target',
+        link: 'mentee/event/mentee-target',
         type: 'Event',
       },
       {
@@ -248,10 +248,10 @@ describe('Discovery card grids', () => {
     })
 
     const targets = [
-      ['customer-target', 'http://localhost:8080/customer/members/customer-target'],
-      ['admin-target', 'http://localhost:8080/admin/products/admin-target'],
-      ['mentor-target', 'http://localhost:8080/mentor/paths/mentor-target'],
-      ['mentee-target', 'http://localhost:8080/mentee/events/mentee-target'],
+      ['customer-target', 'http://localhost:8080/customer/profile/customer-target'],
+      ['admin-target', 'http://localhost:8080/admin/settings'],
+      ['mentor-target', 'http://localhost:8080/mentor/path/mentor-target'],
+      ['mentee-target', 'http://localhost:8080/mentee/event/mentee-target'],
       ['external-target', 'https://example.com/guide'],
     ]
 
@@ -370,7 +370,7 @@ describe('Discovery card grids', () => {
         _id: 'single-journey',
         name: 'Single journey',
         description: 'Continue the journey.',
-        link: '/mentee/events/single-journey',
+        link: 'mentee/journey',
         type: 'Event',
       },
     ]).as('getSingleHomeCard')
@@ -379,7 +379,7 @@ describe('Discovery card grids', () => {
     cy.wait('@getSingleHomeCard')
     cy.get('@openCardLink').should(
       'have.been.calledOnceWith',
-      'http://localhost:8080/mentee/events/single-journey',
+      'http://localhost:8080/mentee/journey',
       '_self',
     )
   })
@@ -390,13 +390,13 @@ describe('Discovery card grids', () => {
       {
         _id: 'first-home-card',
         name: 'First journey',
-        link: '/mentee/events/first-home-card',
+        link: 'mentee/journey',
         type: 'Event',
       },
       {
         _id: 'second-home-card',
         name: 'Second journey',
-        link: '/mentor/resources/second-home-card',
+        link: 'mentor/resource/second-home-card',
         type: 'Resource',
       },
     ]).as('getTwoHomeCards')
@@ -593,19 +593,19 @@ describe('Discovery card grids', () => {
         source: 'resources',
         path: '/discovery/resources',
         btnId: 'discovery-resources-new-button',
-        expectedPathname: '/mentor/resources/',
+        expectedPathname: '/mentor/resource',
       },
       {
         source: 'paths',
         path: '/discovery/paths',
         btnId: 'discovery-paths-new-button',
-        expectedPathname: '/mentor/paths/',
+        expectedPathname: '/mentor/path',
       },
       {
         source: 'plans',
         path: '/discovery/plans',
         btnId: 'discovery-plans-new-button',
-        expectedPathname: '/mentor/plans/',
+        expectedPathname: '/mentor/plan',
       },
     ]
 

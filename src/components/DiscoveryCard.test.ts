@@ -142,7 +142,7 @@ describe('DiscoveryCard', () => {
       _id: 'path-1',
       name: 'Path',
       description: 'Body',
-      link: '/paths/path-1',
+      link: 'mentor/path/path-1',
       type: 'Path',
     })
 
@@ -155,19 +155,19 @@ describe('DiscoveryCard', () => {
     expect(open).toHaveBeenCalledTimes(2)
     expect(open).toHaveBeenNthCalledWith(
       1,
-      expect.stringMatching(/^http:\/\/localhost:8080\/mentor\/paths\/path-1$/),
+      expect.stringMatching(/^http:\/\/localhost:8080\/mentor\/path\/path-1$/),
       '_self',
     )
   })
 
   it('opens a linked card with the Enter key', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    const wrapper = mountCard({ _id: 'event-1', link: '/events/event-1', type: 'Event' })
+    const wrapper = mountCard({ _id: 'event-1', link: 'mentee/event/event-1', type: 'Event' })
 
     await wrapper.get('.discovery-card').trigger('keydown', { key: 'Enter' })
 
     expect(open).toHaveBeenCalledWith(
-      expect.stringMatching(/^http:\/\/localhost:8080\/mentee\/events\/event-1$/),
+      expect.stringMatching(/^http:\/\/localhost:8080\/mentee\/event\/event-1$/),
       '_self',
     )
   })
@@ -223,19 +223,16 @@ describe('DiscoveryCard', () => {
       .toBe(false)
   })
 
-  it('composes a welcome URL and does not render undefined when link is missing', async () => {
+  it('does not follow a card when the API omitted link', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
     const wrapper = mountCard({ name: 'Unlinked' })
 
     await wrapper.get('.discovery-card').trigger('click')
 
-    expect(wrapper.get('.discovery-card').attributes('role')).toBe('link')
-    expect(wrapper.get('.discovery-card').attributes('tabindex')).toBe('0')
+    expect(wrapper.get('.discovery-card').attributes('role')).toBeUndefined()
+    expect(wrapper.get('.discovery-card').attributes('tabindex')).toBeUndefined()
     expect(wrapper.get('[data-automation-id="discovery-card-unknown-body-display"]').text()).toBe('')
     expect(wrapper.html()).not.toContain('undefined')
-    expect(open).toHaveBeenCalledWith(
-      expect.stringMatching(/^http:\/\/localhost:8080\/customer\/$/),
-      '_self',
-    )
+    expect(open).not.toHaveBeenCalled()
   })
 })
