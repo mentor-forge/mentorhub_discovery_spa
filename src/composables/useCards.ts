@@ -5,6 +5,7 @@ import type { Card } from '@/api/types'
 
 export type CardListSource =
   | 'home'
+  | 'events'
   | 'members'
   | 'resources'
   | 'paths'
@@ -20,6 +21,7 @@ const listRequests: Record<
   (offset: number, size: number, name?: string) => Promise<Card[]>
 > = {
   home: (offset, size) => api.getHomeCards(offset, size),
+  events: (offset, size) => api.getEventCards(offset, size),
   members: api.getMemberCards,
   resources: api.getResourceCards,
   paths: api.getPathCards,
@@ -59,7 +61,7 @@ export function useCards(source: MaybeRefOrGetter<CardListSource>) {
 
   const queryKey = computed(() => {
     const currentSource = resolvedSource.value
-    if (currentSource !== 'home' && trimmedSearch.value) {
+    if (currentSource !== 'home' && currentSource !== 'events' && trimmedSearch.value) {
       return ['cards', currentSource, trimmedSearch.value]
     }
     return ['cards', currentSource]
@@ -69,7 +71,10 @@ export function useCards(source: MaybeRefOrGetter<CardListSource>) {
     queryKey,
     queryFn: async () => {
       const currentSource = resolvedSource.value
-      const search = currentSource !== 'home' ? trimmedSearch.value || undefined : undefined
+      const search =
+        currentSource !== 'home' && currentSource !== 'events'
+          ? trimmedSearch.value || undefined
+          : undefined
 
       if (currentSource === 'notifications') {
         const list = await api.getNotificationCards(DEFAULT_OFFSET, DEFAULT_SIZE)

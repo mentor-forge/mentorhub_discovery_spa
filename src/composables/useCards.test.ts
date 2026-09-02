@@ -9,6 +9,7 @@ import { useCards, type CardListSource } from './useCards'
 vi.mock('@/api/client', () => ({
   api: {
     getHomeCards: vi.fn(),
+    getEventCards: vi.fn(),
     getMemberCards: vi.fn(),
     getResourceCards: vi.fn(),
     getPathCards: vi.fn(),
@@ -51,6 +52,7 @@ describe('useCards', () => {
 
   it.each([
     ['home', 'getHomeCards'],
+    ['events', 'getEventCards'],
     ['members', 'getMemberCards'],
     ['resources', 'getResourceCards'],
     ['paths', 'getPathCards'],
@@ -162,6 +164,31 @@ describe('useCards', () => {
       await vi.advanceTimersByTimeAsync(300)
 
       expect(api.getHomeCards).toHaveBeenCalledWith(0, 20)
+
+      wrapper.unmount()
+      queryClient.clear()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps events pagination-only with the events query key', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(api.getEventCards).mockResolvedValue(cards)
+      const { composable, queryClient, wrapper } = mountCards('events')
+
+      await vi.waitFor(() => {
+        expect(composable.isSuccess.value).toBe(true)
+      })
+
+      expect(queryClient.getQueryData(['cards', 'events'])).toEqual(cards)
+      composable.debouncedSearch('ignored-term')
+      await vi.advanceTimersByTimeAsync(300)
+
+      expect(api.getEventCards).toHaveBeenCalledOnce()
+      expect(api.getEventCards).toHaveBeenCalledWith(0, 20)
+      expect(queryClient.getQueryData(['cards', 'events', 'ignored-term'])).toBeUndefined()
 
       wrapper.unmount()
       queryClient.clear()

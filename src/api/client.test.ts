@@ -95,6 +95,7 @@ describe('API Client', () => {
 
     it.each([
       ['home', '/discovery/api/cards', () => api.getHomeCards()],
+      ['events', '/discovery/api/cards/events', () => api.getEventCards()],
       ['members', '/discovery/api/cards/members', () => api.getMemberCards()],
       ['resources', '/discovery/api/cards/resources', () => api.getResourceCards()],
       ['paths', '/discovery/api/cards/paths', () => api.getPathCards()],

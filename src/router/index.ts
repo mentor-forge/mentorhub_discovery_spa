@@ -11,6 +11,12 @@ const router = createRouter({
       meta: { requiresAuth: true, cardSource: 'home', title: 'Home' },
     },
     {
+      path: '/events',
+      name: 'Events',
+      component: () => import('@/pages/DiscoveryHomePage.vue'),
+      meta: { requiresAuth: true, cardSource: 'events', title: 'Events' },
+    },
+    {
       path: '/members',
       alias: '/members/',
       name: 'Members',

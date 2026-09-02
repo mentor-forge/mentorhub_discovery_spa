@@ -72,7 +72,7 @@ npm run container
 
 | Layer | Owns |
 |-------|------|
-| **This SPA** | Collection/list CardGrid browsing (home, members, resources, paths, plans, products, notifications), Discovery page state, Discovery API client, Search by Name / role-gated create toolbar presentation, card deep-link composition |
+| **This SPA** | Collection/list CardGrid browsing (home, events, members, resources, paths, plans, products, notifications), Discovery page state, Discovery API client, Search by Name / role-gated create toolbar presentation, card deep-link composition |
 | **`spa_utils` 1.0.1** | Auth/JWT bootstrap, IdP redirect, `PageFrame` chrome, role-gated hamburger catalog, `buildJourneyUrl` / ALB origin rules, `ListPageSearch`, `CardGrid` / `MhCard` |
 | **Customer / Mentor / Admin / Mentee SPAs** | Detail, edit, and create pages that Discovery cards and Invite/New buttons target |
 | **nginx (this container)** | `/discovery/` document prefix, SPA history fallback, `/discovery/api/` → `discovery_api`, dual runtime-config paths, cache headers |
@@ -119,6 +119,7 @@ Uses `@mentor-forge/mentorhub_spa_utils` **1.0.1**. Local nav config is disallow
 
 ### Routes
 - `/` — composite Home card grid from `GET /discovery/api/cards`
+- `/events` — Event cards from `GET /discovery/api/cards/events`; public URL `/discovery/events`
 - `/members` (also `/members/`) — member cards
 - `/resources` — learning Resource cards
 - `/paths` — learning Path cards
@@ -127,11 +128,12 @@ Uses `@mentor-forge/mentorhub_spa_utils` **1.0.1**. Local nav config is disallow
 - `/notifications` — notification cards
 - `/config` (also `/admin`) — admin Settings host for the packaged `AdminPage`: Token, Config Items, Versions, and Enumerators
 
-All seven list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids can be dismissed.
+All eight list routes share one CardGrid page and load the first 20 cards using `offset` and `size` request headers. Notification cards on the Home and Notifications grids can be dismissed. The packaged hamburger's `nav-events-link` targets this SPA's `/discovery/events` route.
 
 ### Search and Action Toolbar
-- **Search by Name**: All non-home CardGrid lists provide a centered, 300ms-debounced Search by Name input (`ListPageSearch`). The Home composite dashboard remains pagination-only and omits the search control.
+- **Search by Name**: CardGrid lists with a `name` query provide a centered, 300ms-debounced Search by Name input (`ListPageSearch`). Home and Events remain pagination-only and omit the search control.
 - **Typed lists** (`members`, `resources`, `paths`, `plans`, `products`): debounced search becomes an API `?name=` query on `GET /discovery/api/cards/{collection}`. Empty/whitespace search omits `name`.
+- **Events** (contract-driven exception): the API has no `name` query, so the Events request stays pagination-only and the page does not show Search by Name.
 - **Notifications** (intentional exception): Search by Name filters the already-loaded page **client-side** with a case-insensitive `card.name` contains match. The notifications list request stays pagination-only and must **not** receive `name=`. Do not invent an API filter that the contract does not own.
 - **Home Invites**: The Home toolbar displays right-aligned invitation actions based on caller roles:
   - `Invite Member` (visible when roles contain `coordinator`) → Customer SPA members create page (`/customer/members/`)

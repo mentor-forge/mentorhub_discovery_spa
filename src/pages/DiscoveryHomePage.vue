@@ -8,14 +8,14 @@
     </h1>
 
     <v-row
-      v-if="source !== 'home' || hasRole('coordinator').value || hasRole('customer').value"
+      v-if="showToolbar"
       align="center"
       class="mb-4"
       :data-automation-id="`discovery-${source}-toolbar`"
     >
       <v-col cols="12" sm="3" class="d-none d-sm-flex" />
       <v-col cols="12" sm="6" class="d-flex justify-center">
-        <div v-if="source !== 'home'" class="w-100" style="max-width: 480px;">
+        <div v-if="showSearch" class="w-100" style="max-width: 480px;">
           <ListPageSearch
             :searchable="true"
             :search-query="searchQuery"
@@ -137,6 +137,13 @@ const route = useRoute()
 const source = computed<CardListSource>(() => route.meta.cardSource as CardListSource)
 const pageTitle = computed(() => route.meta.title as string)
 const { hasRole } = useRoles()
+const showSearch = computed(() => source.value !== 'home' && source.value !== 'events')
+const showToolbar = computed(
+  () =>
+    showSearch.value ||
+    (source.value === 'home' &&
+      (hasRole('coordinator').value || hasRole('customer').value)),
+)
 const {
   data: cards,
   isLoading,
