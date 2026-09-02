@@ -73,12 +73,12 @@ npm run container
 | Layer | Owns |
 |-------|------|
 | **This SPA** | Collection/list CardGrid browsing (home, members, resources, paths, plans, products, notifications), Discovery page state, Discovery API client, Search by Name / role-gated create toolbar presentation, card deep-link composition |
-| **`spa_utils` 1.0.0** | Auth/JWT bootstrap, IdP redirect, `PageFrame` chrome, role-gated hamburger catalog, `buildJourneyUrl` / ALB origin rules, `ListPageSearch`, `CardGrid` / `MhCard` |
+| **`spa_utils` 1.0.1** | Auth/JWT bootstrap, IdP redirect, `PageFrame` chrome, role-gated hamburger catalog, `buildJourneyUrl` / ALB origin rules, `ListPageSearch`, `CardGrid` / `MhCard` |
 | **Customer / Mentor / Admin / Mentee SPAs** | Detail, edit, and create pages that Discovery cards and Invite/New buttons target |
 | **nginx (this container)** | `/discovery/` document prefix, SPA history fallback, `/discovery/api/` → `discovery_api`, dual runtime-config paths, cache headers |
 | **Discovery API** | Authorization enforcement, card list filtering, notification dismiss |
 
-Uses `@mentor-forge/mentorhub_spa_utils` **1.0.0**. Local nav config is disallowed — do not pass `navItems`, URL maps, or ALB origins to `PageFrame`. Cross-SPA hrefs are absolute welcome/ALB `:8080` URLs from `buildJourneyUrl`, never direct debug ports (`:8398`, etc.).
+Uses `@mentor-forge/mentorhub_spa_utils` **1.0.1**. Local nav config is disallowed — do not pass `navItems`, URL maps, or ALB origins to `PageFrame`. Cross-SPA hrefs are absolute welcome/ALB `:8080` URLs from `buildJourneyUrl`, never direct debug ports (`:8398`, etc.).
 
 ### Prohibited patterns
 - Hosting detail/edit/create pages that belong to another journey SPA
@@ -105,8 +105,9 @@ Uses `@mentor-forge/mentorhub_spa_utils` **1.0.0**. Local nav config is disallow
 - Router guards protect routes requiring authentication
 
 ### Layout and navigation
-- The root layout uses `PageFrame` from `@mentor-forge/mentorhub_spa_utils` 1.0.0 as the shared app bar, role-gated navigation drawer, profile link, and logout shell.
+- The root layout uses `PageFrame` from `@mentor-forge/mentorhub_spa_utils` 1.0.1 as the shared app bar, role-gated navigation drawer, profile link, and logout shell.
 - Discovery passes `pageTitle="Discovery"` and renders its router view in the default slot. The universal navigation catalog and cross-SPA links are owned by spa_utils, not configured locally.
+- The 1.0.1 hamburger catalog contains Home, Events, Resources, Paths, and Plans. Notifications and Settings are admin-only. Settings stays on the hosting SPA and will land on this SPA's `/config` route once F027 ships.
 
 ### API Client
 - Located in `src/api/client.ts`
@@ -169,8 +170,8 @@ All interactive elements in this SPA include `data-automation-id` attributes fol
 
 Cypress targets spa_utils `PageFrame` ids for chrome, not local ones:
 
-- Always present when authenticated: `nav-drawer-toggle`, `page-frame-title`, `nav-profile-link`, `nav-home-link`, `nav-notifications-link`, `nav-logout-link`
-- Role-gated examples: `nav-resources-link` (mentor), `nav-products-link` / `nav-settings-link` (admin), `nav-customer-link` (customer)
+- Always present when authenticated: `nav-drawer-toggle`, `page-frame-title`, `nav-profile-link`, `nav-home-link`, `nav-events-link`, `nav-logout-link`
+- Role-gated examples: `nav-resources-link` (mentor), `nav-notifications-link` / `nav-settings-link` (admin)
 
 Do not define host `nav-*` ids in this SPA.
 
