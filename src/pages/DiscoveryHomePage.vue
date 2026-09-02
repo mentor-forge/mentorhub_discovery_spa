@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <v-container fluid>
     <h1
       class="text-h4 mb-4"
       :data-automation-id="`discovery-${source}-heading`"
@@ -124,10 +124,11 @@
 </template>
 
 <script setup lang="ts">
-import { CardGrid, ListPageSearch } from '@mentor-forge/mentorhub_spa_utils'
+import { ListPageSearch } from '@mentor-forge/mentorhub_spa_utils'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Card } from '@/api/types'
+import CardGrid from '@/components/CardGrid.vue'
 import DiscoveryCard from '@/components/DiscoveryCard.vue'
 import { useCards, type CardListSource } from '@/composables/useCards'
 import { useRoles } from '@/composables/useRoles'

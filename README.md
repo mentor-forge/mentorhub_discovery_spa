@@ -72,8 +72,8 @@ npm run container
 
 | Layer | Owns |
 |-------|------|
-| **This SPA** | Collection/list CardGrid browsing (home, events, members, resources, paths, plans, products, notifications), Discovery page state, Discovery API client, Search by Name / role-gated create toolbar presentation, card deep-link composition |
-| **`spa_utils` 1.0.1** | Auth/JWT bootstrap, IdP redirect, `PageFrame` chrome, role-gated hamburger catalog, `buildJourneyUrl` / ALB origin rules, `ListPageSearch`, `CardGrid` / `MhCard` |
+| **This SPA** | Local `CardGrid` layout and collection/list browsing (home, events, members, resources, paths, plans, products, notifications), Discovery page state, Discovery API client, Search by Name / role-gated create toolbar presentation, card deep-link composition |
+| **`spa_utils` 1.0.1** | Auth/JWT bootstrap, IdP redirect, `PageFrame` chrome, role-gated hamburger catalog, `buildJourneyUrl` / ALB origin rules, `ListPageSearch`, `MhCard` chrome |
 | **Customer / Mentor / Admin / Mentee SPAs** | Detail, edit, and create pages that Discovery cards and Invite/New buttons target |
 | **nginx (this container)** | `/discovery/` document prefix, SPA history fallback, `/discovery/api/` → `discovery_api`, dual runtime-config paths, cache headers |
 | **Discovery API** | Authorization enforcement, card list filtering, notification dismiss |
@@ -108,6 +108,9 @@ Uses `@mentor-forge/mentorhub_spa_utils` **1.0.1**. Local nav config is disallow
 - The root layout uses `PageFrame` from `@mentor-forge/mentorhub_spa_utils` 1.0.1 as the shared app bar, role-gated navigation drawer, profile link, and logout shell.
 - Discovery passes `pageTitle="Discovery"` and renders its router view in the default slot. The universal navigation catalog and cross-SPA links are owned by spa_utils, not configured locally.
 - The 1.0.1 hamburger catalog contains Home, Events, Resources, Paths, and Plans. Notifications and Settings are admin-only. Settings stays on the hosting origin (with no `:8080` rewrite) and lands on this SPA's `/config` route.
+- Discovery owns its local responsive `CardGrid` layout because it is the only
+  journey SPA hosting card dashboards. `spa_utils` continues to own `MhCard`,
+  `PageFrame`, and `ListPageSearch`.
 
 ### API Client
 - Located in `src/api/client.ts`
