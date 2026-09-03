@@ -1,6 +1,6 @@
 # F035 – Pin `@mentor-forge/mentorhub_spa_utils@1.0.3` (`token.display_name`)
 
-**Status**: Pending  
+**Status**: Shipped  
 **Type**: Feature  
 **Depends On**: _(none — first task in this wave)_  
 **Description**: This repo owns the Discovery SPA **1.0.3 pin** ([F-DS06 / GitHub #13](https://github.com/mentor-forge/mentorhub_discovery_spa/issues/13)). Bump `@mentor-forge/mentorhub_spa_utils` from exact `1.0.2` to exact **`1.0.3`**, refresh the lockfile from CodeArtifact, and replace any local use of token `name` with token `display_name`. Do **not** change routes or CardGrid behavior in this task.
@@ -99,3 +99,33 @@ Paths are relative to **this SPA repository root**.
 Do not change CardGrid, `/config`, `/events`, or notification routes. Do not pass disallowed `PageFrame` props. Do not change Cypress specs in this task unless a compile of test helpers breaks. Do not change `src/router/index.ts`, `vite.config.ts`, `nginx.conf.template`, or `Dockerfile`. Do not rename Card / Notification / Search by Name `name` fields.
 
 ## Execution Notes
+
+### Plan
+
+1. Confirm `@mentor-forge/mentorhub_spa_utils@1.0.3` is published (`mh`, then `npm view`). If not, Blocked and stop.
+2. Pin `package.json` to exact `1.0.3` and refresh `package-lock.json` via `npm install --include=dev`. Confirm with `npm ls`.
+3. Search `src` / `README.md` for token `name` vs `display_name`. Remaining `name` hits are Card / Notification / enumerator / collection / Search by Name fields — leave them. Do not add a local `display_name ?? name` shim.
+4. `ConfigResponse.token` is `{ claims?: Record<string, unknown> }` with no typed display field; fixtures do not encode token `name`. Leave types/composables unless 1.0.3 compile fails. Cypress subpaths unchanged in spa_utils 1.0.3 — leave `cypress.config.ts` / `e2e.ts` unless imports break.
+5. Update `README.md` 1.0.2 → 1.0.3; document Token-tab `display_name` (`admin-token-display-name-display`) and PageFrame chrome `nav-profile-name-display` as spa_utils-owned. Keep 1.0.1/1.0.2 hamburger catalog wording.
+6. Run lint, test, coverage, build. Do not run Cypress. Rename PENDING → SHIPPED after success.
+
+### Results
+
+- Branch: `F-DA06-TokenUpdate` (unchanged).
+- `mh` + `npm view @mentor-forge/mentorhub_spa_utils version` → **1.0.3** (published to CodeArtifact; versions include 1.0.3).
+- `package.json` pin: `"@mentor-forge/mentorhub_spa_utils": "1.0.3"` (exact, no caret).
+- `npm install --include=dev` resolved lockfile from CodeArtifact:
+  `https://mentor-forge-560167829275.d.codeartifact.us-east-1.amazonaws.com/npm/mentorhub-npm/@mentor-forge/mentorhub_spa_utils/-/mentorhub_spa_utils-1.0.3.tgz`
+- `npm ls @mentor-forge/mentorhub_spa_utils` → `@mentor-forge/mentorhub_spa_utils@1.0.3`
+- Confirmation searches:
+  - `rg 'token\.name|token\[.name.\]|token\.get\(.name.\)' src README.md` — **zero hits**
+  - `rg 'display_name' src README.md` — README only (spa_utils ownership docs); no local source mapping
+  - Remaining `src` `name` hits are Card / Notification document fields, Search by Name `?name=`, enumerator / collection names, Vue component `name`, router route names, HTTP header `name`, and `useAppTitle` profile-title helper — **not** token display claims
+- No `src/**` compile breakage against 1.0.3. Left `types.ts`, composables, tests, `vitest.config.ts`, and Cypress helpers unchanged (Cypress subpaths still `cypress/jwtDefaults`, `cypress/registerJwtSignTask`, `cypress/registerAuthCommands`). Did not add a `display_name` type or `name` alias.
+- Tests (from SPA repo root; Cypress **not** run):
+  - `npm run lint` — clean (`vue-tsc --noEmit`)
+  - `npm run test` — 14 files / **125 passed**
+  - `npm run test:coverage` — 125 passed; existing scoped thresholds held (`src/api` 98.14% lines / 100% funcs / 84% branches; `src/composables` 98.11% / 90.9% / 74.35%; `src/components` 100% / 100% / 97.43%). Unrelated pre-existing gaps: `src/initAuth.ts`, `src/composables/useAuth.ts` (re-export), Cypress specs, and `public/runtime-config.js` sit outside those thresholds and remain at 0% in the workspace report.
+  - `npm run build` — `vue-tsc` + Vite production build clean. Pre-existing Vite notes: `/discovery/runtime-config.js` without `type="module"`; some chunks > 500 kB.
+- F036 not implemented. No commit / push / PR.
+
