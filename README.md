@@ -171,13 +171,7 @@ After the initial Home query succeeds, a Home result containing exactly one link
 ### E2E Tests
 - Cypress against the packaged SPA on `http://localhost:8398` (`npm run service` must be running; do not run `npm run dev` at the same time)
 - Prefer `cy.visitPrefixed(...)` over raw `cy.visit` for in-app routes — it asserts `PerformanceNavigationTiming` so a Vue Router rewrite cannot mask an un-prefixed document fetch
-- Specs cover CardGrid catalogs and wide equal-height/full-track layout, Resource/Event
-  type-icon hints, exclusive role-gated Notification Dismiss/Cancel actions and
-  POST paths, one-card versus multi-card Home auto-follow, Search by Name
-  (API-backed vs notifications client-side), role-gated Invite/New buttons
-  (positive and negative), spa_utils `PageFrame` chrome, and the nginx deployment
-  boundary (`deployment.cy.ts`: redirects, history fallback, cache headers, dual
-  runtime-config, authenticated and unauthenticated `/discovery/api` proxy)
+- Specs: `navigation.cy.ts` (PageFrame chrome, this SPA’s `/discovery/config` Settings host and mentee admin gate, Token-tab / chrome `display_name` from spa_utils **1.0.3** (`admin-token-display-name-display`, `nav-profile-name-display`)), `cards.cy.ts` (CardGrid catalogs, Search by Name, Invite/New, Dismiss/Cancel, Home auto-follow), `deployment.cy.ts` (redirects, history fallback, cache headers, dual runtime-config, authenticated and unauthenticated `/discovery/api` proxy). Hamburger catalog role gates are tested in spa_utils, not here. Card / Search by Name `name` is a document field, not the token display claim.
 - UI role gating is UX; API authorization is proven separately via Bearer requests through `/discovery/api/`
 
 ## Automation Support
@@ -189,7 +183,9 @@ role gates and collection hrefs are tested in spa_utils — this SPA only assert
 and routes:
 
 - Always present when authenticated: `nav-drawer-toggle`, `page-frame-title`, `nav-profile-link`
-- spa_utils 1.0.3 chrome / Token tab (owned by `PageFrame` / `TokenClaimsCard`, not this SPA): `nav-profile-name-display` (JWT `display_name` next to the avatar; omitted when the claim is blank or missing), `admin-token-display-name-display` (Token-tab `display_name`; missing string claims display `N/A`)
+- spa_utils **1.0.3** ids this host asserts (not local `nav-*` ids):
+  - Token tab `admin-token-display-name-display` — config intercept `token.display_name`; missing claim renders `N/A` (no `name` / `given_name` / `email` fallback)
+  - PageFrame chrome `nav-profile-name-display` inside `nav-profile-link` — JWT `display_name` next to the avatar; omitted when the claim is blank or missing
 - This SPA hosts Settings at `/discovery/config` (`nav-settings-link`, admin-only)
 
 Do not define host `nav-*` ids in this SPA.
