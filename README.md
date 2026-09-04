@@ -73,12 +73,12 @@ npm run container
 | Layer | Owns |
 |-------|------|
 | **This SPA** | Local `CardGrid` layout and collection/list browsing (home, events, members, resources, paths, plans, products, notifications), Discovery page state, Discovery API client, Search by Name / role-gated create toolbar presentation |
-| **`spa_utils` 1.0.2** | Auth/JWT bootstrap, IdP redirect, `PageFrame` chrome, role-gated hamburger catalog, `buildJourneyUrl` / ALB origin rules, `ListPageSearch`, `MhCard` chrome |
+| **`spa_utils` 1.0.5** | Auth/JWT bootstrap, IdP redirect, `PageFrame` chrome (JWT `display_name` below Logout in the drawer as `nav-profile-name-display`), Token-tab `display_name` (`admin-token-display-name-display`), role-gated hamburger catalog, `buildJourneyUrl` / ALB origin rules, `ListPageSearch`, `MhCard` chrome |
 | **Customer / Mentor / Admin / Mentee SPAs** | Detail, edit, and create pages that Discovery cards and Invite/New buttons target |
 | **nginx (this container)** | `/discovery/` document prefix, SPA history fallback, `/discovery/api/` → `discovery_api`, dual runtime-config paths, cache headers |
 | **Discovery API** | Authorization enforcement, card list filtering, notification dismiss and cancel, Card `type` and relative `link` projection |
 
-Uses `@mentor-forge/mentorhub_spa_utils` **1.0.2**. Local nav config is disallowed — do not pass `navItems`, URL maps, or ALB origins to `PageFrame`. Cross-SPA hrefs are absolute welcome/ALB `:8080` URLs from `buildJourneyUrl`, never direct debug ports (`:8398`, etc.).
+Uses `@mentor-forge/mentorhub_spa_utils` **1.0.5**. Local nav config is disallowed — do not pass `navItems`, URL maps, or ALB origins to `PageFrame`. Cross-SPA hrefs are absolute welcome/ALB `:8080` URLs from `buildJourneyUrl`, never direct debug ports (`:8398`, etc.). Token-tab `display_name` (`admin-token-display-name-display`) and PageFrame chrome `nav-profile-name-display` are owned by spa_utils 1.0.5 — this SPA does not map or fall back from token `name`.
 
 ### Prohibited patterns
 - Hosting detail/edit/create pages that belong to another journey SPA
@@ -105,9 +105,9 @@ Uses `@mentor-forge/mentorhub_spa_utils` **1.0.2**. Local nav config is disallow
 - Router guards protect routes requiring authentication
 
 ### Layout and navigation
-- The root layout uses `PageFrame` from `@mentor-forge/mentorhub_spa_utils` 1.0.2 as the shared app bar, role-gated navigation drawer, profile link, and logout shell.
+- The root layout uses `PageFrame` from `@mentor-forge/mentorhub_spa_utils` 1.0.5 as the shared app bar, role-gated navigation drawer, profile link, JWT `display_name` chrome (`nav-profile-name-display`), and logout shell.
 - Discovery passes `pageTitle="Discovery"` and renders its router view in the default slot. The universal navigation catalog and cross-SPA links are owned by spa_utils, not configured locally.
-- The 1.0.2 hamburger catalog contains Home, Resources, and Paths for any authenticated user. Plans is mentor-only. Notifications, Events, and Settings are admin-only. Settings stays on the hosting origin (with no `:8080` rewrite) and lands on this SPA's `/config` route.
+- The 1.0.2 hamburger catalog contains Home, Resources, and Paths for any authenticated user. Plans is mentor-only. Notifications, Events, and Settings are admin-only. Settings stays on the hosting origin (with no `:8080` rewrite) and lands on this SPA's `/config` route. Token-tab `display_name` (`admin-token-display-name-display`) is owned by spa_utils `TokenClaimsCard`; missing string claims display `N/A`.
 - Discovery owns its local responsive `CardGrid` layout because it is the only
   journey SPA hosting card dashboards. `spa_utils` continues to own `MhCard`,
   `PageFrame`, and `ListPageSearch`.
@@ -171,13 +171,7 @@ After the initial Home query succeeds, a Home result containing exactly one link
 ### E2E Tests
 - Cypress against the packaged SPA on `http://localhost:8398` (`npm run service` must be running; do not run `npm run dev` at the same time)
 - Prefer `cy.visitPrefixed(...)` over raw `cy.visit` for in-app routes — it asserts `PerformanceNavigationTiming` so a Vue Router rewrite cannot mask an un-prefixed document fetch
-- Specs cover CardGrid catalogs and wide equal-height/full-track layout, Resource/Event
-  type-icon hints, exclusive role-gated Notification Dismiss/Cancel actions and
-  POST paths, one-card versus multi-card Home auto-follow, Search by Name
-  (API-backed vs notifications client-side), role-gated Invite/New buttons
-  (positive and negative), spa_utils `PageFrame` chrome, and the nginx deployment
-  boundary (`deployment.cy.ts`: redirects, history fallback, cache headers, dual
-  runtime-config, authenticated and unauthenticated `/discovery/api` proxy)
+- Specs: `navigation.cy.ts` (PageFrame chrome, this SPA’s `/discovery/config` Settings host and mentee admin gate, Token-tab / chrome `display_name` from spa_utils **1.0.5** (`admin-token-display-name-display`, `nav-profile-name-display`)), `cards.cy.ts` (CardGrid catalogs, Search by Name, Invite/New, Dismiss/Cancel, Home auto-follow), `deployment.cy.ts` (redirects, history fallback, cache headers, dual runtime-config, authenticated and unauthenticated `/discovery/api` proxy). Hamburger catalog role gates are tested in spa_utils, not here. Card / Search by Name `name` is a document field, not the token display claim.
 - UI role gating is UX; API authorization is proven separately via Bearer requests through `/discovery/api/`
 
 ## Automation Support
@@ -189,6 +183,9 @@ role gates and collection hrefs are tested in spa_utils — this SPA only assert
 and routes:
 
 - Always present when authenticated: `nav-drawer-toggle`, `page-frame-title`, `nav-profile-link`
+- spa_utils **1.0.5** ids this host asserts (not local `nav-*` ids):
+  - Token tab `admin-token-display-name-display` — config intercept `token.display_name`; missing claim renders `unknown` (no `name` / `given_name` / `email` fallback)
+  - PageFrame chrome `nav-profile-name-display` below Logout — `config.token.display_name` in the drawer footer (`unknown` when the claim is blank or missing)
 - This SPA hosts Settings at `/discovery/config` (`nav-settings-link`, admin-only)
 
 Do not define host `nav-*` ids in this SPA.
