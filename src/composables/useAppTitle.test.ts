@@ -13,7 +13,7 @@ describe('useAppTitle', () => {
     expect(document.title).toBe('Discovery')
   })
 
-  it('sets full_name:Discovery when profile name is provided', () => {
+  it('sets display_name:Discovery when a Profile display name is provided', () => {
     const { setAppBarTitle, appBarTitle } = useAppTitle()
     setAppBarTitle('Jane Explorer')
     expect(appBarTitle.value).toBe('Jane Explorer:Discovery')
