@@ -175,7 +175,7 @@ After the initial Home query succeeds, a Home result containing exactly one link
 ### E2E Tests
 - Cypress against the packaged SPA on `http://localhost:8398` (`npm run service` must be running; do not run `npm run dev` at the same time)
 - Prefer `cy.visitPrefixed(...)` over raw `cy.visit` for in-app routes — it asserts `PerformanceNavigationTiming` so a Vue Router rewrite cannot mask an un-prefixed document fetch
-- Specs: `navigation.cy.ts` (PageFrame chrome, this SPA’s `/discovery/config` Settings host and mentee admin gate, Token-tab / chrome `display_name` from spa_utils **1.0.6** (`admin-token-display-name-display`, `nav-profile-name-display`)), `cards.cy.ts` (local CardGrid catalogs, Search by Name, Invite/New, Dismiss/Cancel, Home auto-follow), `deployment.cy.ts` (redirects, history fallback, cache headers, dual runtime-config, authenticated and unauthenticated `/discovery/api` proxy). Hamburger catalog role gates are tested in spa_utils, not here. Card / Search by Name `name` is a document field, not the token display claim.
+- Specs: `navigation.cy.ts` (PageFrame chrome, this SPA’s `/discovery/config` Settings host and mentee admin gate, Token-tab / chrome `display_name` from spa_utils **1.0.6** (`admin-token-display-name-display`, `nav-profile-name-display`)), `cards.cy.ts` (local CardGrid catalogs with `discovery-*-grid` ids — not package `data-card-grid` — Search by Name, Invite/New, Dismiss/Cancel, Home auto-follow; card bodies are local `MarkdownView` — assert rendered `h2` / `strong` HTML and do not open edit mode), `deployment.cy.ts` (redirects, history fallback, cache headers, dual runtime-config, authenticated and unauthenticated `/discovery/api` proxy). Hamburger catalog role gates are tested in spa_utils, not here. Card / Search by Name `name` is a document field, not the token display claim. Package `MarkdownEditor` resting view is owned by spa_utils **1.0.6** and is not used on these list pages; this SPA did not add `marked` / `dompurify` for that editor (pre-existing pins remain only for local `MarkdownView`).
 - UI role gating is UX; API authorization is proven separately via Bearer requests through `/discovery/api/`
 
 ## Automation Support
@@ -191,6 +191,7 @@ and routes:
   - Token tab `admin-token-display-name-display` — config intercept `token.display_name`; missing claim renders `unknown` (no `name` / `given_name` / `email` fallback)
   - PageFrame chrome `nav-profile-name-display` below Logout — `config.token.display_name` in the drawer footer (`unknown` when the claim is blank or missing)
 - This SPA hosts Settings at `/discovery/config` (`nav-settings-link`, admin-only)
+- List dashboards use local `CardGrid` automation ids (`discovery-home-grid` and the other `discovery-*-grid` ids), not package `data-card-grid`. Card bodies are local `MarkdownView` (`discovery-card-…-body-display`); assert rendered HTML and do not open edit mode. Package `MarkdownEditor` is not used on list pages.
 
 Do not define host `nav-*` ids in this SPA.
 
