@@ -1,6 +1,6 @@
 # F039 – Audit SPA dependency, build and runtime coupling
 
-**Status**: Pending
+**Status**: Shipped
 
 **Type**: Feature
 
@@ -70,4 +70,13 @@ AWS inventory, secure backup/restore evidence and separately approved decommissi
 
 ## Execution Notes
 
-Reserved for the execution agent. No implementation, tests, service changes or publication have been performed.
+Inventory tracked dependency delivery and runtime paths. Confirm package prerequisites against the linked issues and known consumer evidence, then document the cutover and rollback in docs/aws-exit.md.
+
+Reviewed the package and lock, tracked npm configuration and ignore rules,
+Dockerfile and build wrapper, GitHub Actions, shared auth imports, runtime
+configuration, Vite proxy, and Nginx wiring. Confirmed 416 CodeArtifact lock
+URLs and no direct AWS runtime references in the tracked application. Checked
+the migration issues and Customer SPA's 1.0.7 consumer evidence. Recorded the
+cutover, Discovery-specific package access gates, and rollback in
+`docs/aws-exit.md`. No ignored credential values were read, and no services
+were started.
