@@ -1,6 +1,6 @@
 # F042 – Update SPA GitHub Actions registry permissions and validation
 
-**Status**: Pending
+**Status**: Shipped
 
 **Type**: Feature
 
@@ -73,4 +73,14 @@ AWS inventory, secure backup/restore evidence and separately approved decommissi
 
 ## Execution Notes
 
-Reserved for the execution agent. No implementation, tests, service changes or publication have been performed.
+Replaced AWS OIDC and CodeArtifact authentication with the built-in GitHub
+workflow token. Main-only publishing retains AMD64 and ARM64, the existing
+GHCR tag, and the package write permission. Separate PR validation gates
+authenticated npm and non-publishing Docker checks on the credential-free
+source and lock check and limits them to same-repository PRs outside Dependabot.
+
+Validated workflow YAML, triggers, permissions, and matching BuildKit secret
+wiring. The token-free source check, locked npm install, all 125 unit tests,
+type check, production build, and clean ARM64 container build passed locally
+with AWS credentials unset. The existing shell-form Docker CMD warning
+remains. Hosted built-in token access is awaiting the pull request.
