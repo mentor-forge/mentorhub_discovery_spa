@@ -67,3 +67,16 @@ An authenticated install and a fresh-cache `npm ci` passed without AWS
 credentials. All 125 unit tests and the production build passed. The pinned
 GitHub tarball returned HTTP 401 without a token. Hosted workflow package
 access is verified separately.
+
+## Container build
+
+Run `npm run container` with a `GITHUB_TOKEN` that can read GitHub Packages.
+The Dockerfile installs from the committed lock using registry-scoped auth in
+a BuildKit secret and temporary npm configuration. The build context excludes
+npm configuration files. The wrapper preserves the default GHCR image tag
+and accepts `DISCOVERY_SPA_IMAGE` for isolated testing.
+
+An AWS-free ARM64 build passed. Final image history and filesystem checks found
+no npm auth configuration. All 35 packaged Cypress cases passed with isolated
+Discovery API and seeded MongoDB, including runtime configuration, redirects,
+the Discovery base path, and authenticated and unauthenticated API proxying.

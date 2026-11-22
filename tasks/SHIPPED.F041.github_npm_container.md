@@ -1,6 +1,6 @@
 # F041 – Use GitHub npm BuildKit secrets in SPA container builds
 
-**Status**: Pending
+**Status**: Shipped
 
 **Type**: Feature
 
@@ -76,4 +76,16 @@ AWS inventory, secure backup/restore evidence and separately approved decommissi
 
 ## Execution Notes
 
-Reserved for the execution agent. No implementation, tests, service changes or publication have been performed.
+Replaced the AWS wrapper and CodeArtifact build secret with a required GitHub
+Packages BuildKit secret and host-scoped temporary npm configuration. Builds
+always run `npm ci` from the committed lock. Local npm configuration files are
+excluded from the build context. Retained the default GHCR tag, Nginx runtime
+configuration, proxy, Vite build cache, and Discovery base path.
+
+`npm run container` passed on ARM64 with AWS credential variables unset and
+with an isolated image tag. The wrapper failed immediately with an explanatory
+message when the package token was absent. Shell syntax and diff checks passed.
+Runtime image history and filesystem checks found no auth configuration or
+secret mounts. All 35 packaged Cypress cases passed against isolated Discovery
+API and seeded MongoDB. This included all eight deployment checks and login,
+logout, and unauthorized request behavior.
