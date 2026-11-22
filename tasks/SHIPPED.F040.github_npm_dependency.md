@@ -1,6 +1,6 @@
 # F040 – Migrate SPA npm source, exact package pin and lockfile
 
-**Status**: Pending
+**Status**: Shipped
 
 **Type**: Feature
 
@@ -76,4 +76,14 @@ AWS inventory, secure backup/restore evidence and separately approved decommissi
 
 ## Execution Notes
 
-Reserved for the execution agent. No implementation, tests, service changes or publication have been performed.
+Updated the scoped npm configuration, pinned SPA Utils 1.0.7, and regenerated
+the lock with public npm URLs for all third-party packages. Compared the pin
+with live GitHub Packages distribution metadata. Verified all 415
+third-party package records retained their versions and integrity values.
+
+An authenticated `npm install --include=dev` and a clean `npm ci` with a
+fresh cache passed without AWS credentials. All 125 unit tests and the
+TypeScript/Vite production build passed. The unauthenticated pinned tarball
+request returned HTTP 401. Vite emitted runtime-script and bundle-size
+warnings without failing the build. Hosted workflow access remains to be
+verified.

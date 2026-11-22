@@ -54,3 +54,16 @@ The runtime image currently uses the floating `nginx:stable-alpine` tag.
 The separate Nginx task owns the version pin and dual-architecture validation.
 Retain the packaged Cypress deployment checks and assess Vite coverage
 separately during acceptance.
+
+### Locked dependency cutover
+
+The committed npm configuration routes only the Mentor Forge scope to GitHub
+Packages and reads authentication from `GITHUB_TOKEN`. The package manifest
+pins SPA Utils 1.0.7 exactly. The lockfile retains the published GitHub tarball
+and SHA-512 integrity. Its 415 third-party packages use public npm with their
+existing versions and integrity values.
+
+An authenticated install and a fresh-cache `npm ci` passed without AWS
+credentials. All 125 unit tests and the production build passed. The pinned
+GitHub tarball returned HTTP 401 without a token. Hosted workflow package
+access is verified separately.
