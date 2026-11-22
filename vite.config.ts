@@ -9,7 +9,8 @@ function injectRuntimeConfig(): Plugin {
   return {
     name: 'inject-runtime-config',
     configResolved(config: ResolvedConfig) {
-      base = config.base
+      // Vite adds the configured base to root-relative script URLs in dev.
+      base = config.command === 'serve' ? '/' : config.base
     },
     transformIndexHtml: {
       order: 'pre' as const,

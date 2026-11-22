@@ -13,10 +13,14 @@ export default defineConfig({
     env: {
       JWT_SECRET: e2eDefaultJwtSecret(),
     },
-    setupNodeEvents(on) {
+    setupNodeEvents(on, config) {
+      if (config.env.target === 'dev') {
+        config.excludeSpecPattern = [...[config.excludeSpecPattern].flat(), '**/deployment.cy.ts']
+      }
       registerJwtSignTask(on)
       // Webpack cannot parse TS from spa_utils in node_modules; esbuild bundles it.
       on('file:preprocessor', createBundler())
+      return config
     },
   },
 })

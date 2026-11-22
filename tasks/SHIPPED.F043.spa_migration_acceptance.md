@@ -1,6 +1,6 @@
 # F043 – Document SPA setup and verify provider-neutral runtime behavior
 
-**Status**: Pending
+**Status**: Shipped
 
 **Type**: Feature
 
@@ -72,4 +72,21 @@ AWS inventory, secure backup/restore evidence and separately approved decommissi
 
 ## Execution Notes
 
-Reserved for the execution agent. No implementation, tests, service changes or publication have been performed.
+Update pinned-package setup and rollback guidance, then verify clean local install, build, and authorization behavior. Run dedicated Vite and packaged Cypress against isolated Discovery API and seeded MongoDB. Preserve the full packaged deployment assertions. Hosted workflow access is verified after the pull request opens.
+
+- Documented GitHub Packages token onboarding, exact package and lock updates,
+  AWS-free image builds, and rollback in the README and dependency guidance.
+- Fixed Vite's double-prefixed runtime configuration URL. Added dedicated
+  Cypress development commands and waited for Home to resolve before exercising
+  drawer navigation. The packaged suite retains its full deployment assertions.
+- Passed authenticated `npm install --include=dev`, `npm ci`, `npm run test`
+  (125 tests), `npm run lint`, `npm run build`, and a fresh ARM64
+  `npm run container`. The isolated equivalent of the service/Cypress gate
+  used disposable Discovery API and seeded MongoDB.
+- All 26 applicable Vite Cypress cases and all 35 packaged Cypress cases
+  passed. The packaged proxy returned 401 for a signed expired token.
+  Unit tests passed for clearing the session and redirecting on 401. The
+  packaged suite verified the deployed IdP URL, Discovery prefix, and
+  least-privileged and unauthenticated API paths.
+- Hosted package authentication is verified by the pull request workflow
+  after review opens.

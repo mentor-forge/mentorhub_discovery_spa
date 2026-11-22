@@ -1,13 +1,13 @@
 # Discovery SPA AWS exit audit
 
-The current branch pins SPA Utils 1.0.6 in `package.json` and
-`package-lock.json`. The lock has 416 CodeArtifact tarball URLs, including the
-shared package and third-party packages. The tracked root `.npmrc` routes the
-Mentor Forge scope to CodeArtifact. Git ignores local config such as
-`scripts/.npmrc` and `.env.local`. The README and task planning guide still
-reference CodeArtifact authentication for dependency setup.
+Before migration, Discovery SPA pinned SPA Utils 1.0.6 in `package.json` and
+`package-lock.json`. The old lock had 416 CodeArtifact tarball URLs, including the
+shared package and third-party packages. The old tracked root `.npmrc` routed
+the Mentor Forge scope to CodeArtifact. Git ignores local config such as
+`scripts/.npmrc` and `.env.local`. The README and task planning guide
+previously referenced CodeArtifact authentication for dependency setup.
 
-| Path | Current dependency | Cutover |
+| Path | Previous dependency | Cutover |
 | --- | --- | --- |
 | `package.json`, `package-lock.json`, `.npmrc` | CodeArtifact pin, resolved tarballs, and scoped registry | Pin the published SPA Utils 1.0.7 release exactly from GitHub Packages. Resolve third-party packages from public npm and keep the regenerated lockfile. |
 | `Dockerfile`, `scripts/docker-build.sh` | The wrapper uses the AWS CLI to obtain a CodeArtifact token and the Dockerfile consumes it through the `codeartifact_token` BuildKit mount | Use a GitHub Packages read token through a scoped BuildKit secret and install from the committed lock. |
@@ -96,3 +96,22 @@ The publishing job reads repository contents and has package write access.
 Both container workflows pass package authentication through the BuildKit
 secret named `github_npm_token`. Hosted package access is verified on the PR
 after the branch is pushed.
+
+## Local migration acceptance
+
+A dependency install and clean `npm ci` passed. All 125 unit tests, type checking,
+the production build, and a fresh local ARM64 container build passed.
+
+The Vite Cypress commands verify browser behavior with the backing Discovery
+API available. Vite now resolves the runtime configuration URL under
+`/discovery/` without adding its base twice. All 26 Vite-applicable Cypress
+cases passed, including login bootstrap, Settings claims and role gating, and
+logout. The nine Nginx-specific cases run in the packaged suite.
+
+All 35 packaged Cypress cases passed with disposable Discovery API and seeded
+MongoDB. These include prefixed proxy requests for a least-privileged persona,
+unauthenticated rejection, path fallback, and deployed runtime IdP
+configuration. A separate signed expired-token request through the proxy
+returned 401. Unit tests confirmed the client clears its stored session and
+redirects on 401. Hosted Actions package access remains to be verified on the
+pull request.

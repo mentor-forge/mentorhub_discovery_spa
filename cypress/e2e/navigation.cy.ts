@@ -3,6 +3,7 @@
  * Hamburger catalog role gates and collection hrefs are covered in spa_utils.
  */
 describe('Navigation Drawer', () => {
+  const isDev = Cypress.env('target') === 'dev'
   const APP_ORIGIN = Cypress.config('baseUrl') as string
   const IDP_STUB_PATHNAME = '/login.html'
   const CONFIG_PATHNAME = '/discovery/config'
@@ -22,7 +23,15 @@ describe('Navigation Drawer', () => {
 
   beforeEach(() => {
     // Stay on Discovery Home even when the live API returns a single auto-follow card.
-    cy.intercept('GET', '**/discovery/api/cards', [])
+    cy.intercept('GET', '**/discovery/api/cards', []).as('getHomeCards')
+    if (isDev) {
+      // Ensure a prior Vite response cannot bypass a subsequent IdP stub.
+      cy.intercept({ method: 'GET', url: '**/discovery/runtime-config.js', middleware: true }, (req) => {
+        req.on('before:response', (res) => {
+          res.headers['cache-control'] = 'no-store'
+        })
+      })
+    }
   })
 
   /** Point the container's IdP at a same-origin stub: the real value may be a cross-origin
@@ -64,6 +73,8 @@ describe('Navigation Drawer', () => {
     stubAdminConfig()
     cy.login(['admin'])
     cy.visitPrefixed('/discovery/')
+    cy.wait('@getHomeCards')
+    cy.get('[data-automation-id="discovery-home-empty"]').should('be.visible')
     cy.get('[data-automation-id="nav-drawer-toggle"]').should('be.visible').click()
 
     cy.get('[data-automation-id="nav-settings-link"]')
@@ -177,6 +188,8 @@ describe('Navigation Drawer', () => {
     stubIdpLoginUri()
     cy.login(['mentee'])
     cy.visitPrefixed('/discovery/')
+    cy.wait('@getHomeCards')
+    cy.get('[data-automation-id="discovery-home-empty"]').should('be.visible')
     cy.get('[data-automation-id="nav-drawer-toggle"]').should('be.visible').click()
     cy.get('[data-automation-id="nav-logout-link"]').scrollIntoView().should('be.visible').click()
 
@@ -197,7 +210,8 @@ describe('Navigation Drawer', () => {
     })
   })
 
-  it('should serve the real container IdP config from the prefixed runtime-config.js', () => {
+  const packagedIt = isDev ? it.skip : it
+  packagedIt('should serve the real container IdP config from the prefixed runtime-config.js', () => {
     cy.request('/discovery/runtime-config.js').then((response) => {
       expect(response.status).to.equal(200)
       expect(response.headers['cache-control']).to.contain('no-store')
