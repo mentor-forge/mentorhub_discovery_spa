@@ -64,7 +64,7 @@ Each task file must contain the following sections under H1 and H2 headings.
   - Can include changing existing tests because of modified features.
   - Should always include a description of the tests that should be used to verify completion.
   - In this repo, that typically means some combination of:
-    - `npm run install` — refresh dependencies after changes (CodeArtifact auth; run `mh` first if needed)
+    - `npm ci` — install from the committed lock with a `GITHUB_TOKEN` that has `read:packages`; update the exact SPA Utils pin and lock together for intentional dependency changes
     - `npm run test` — unit tests 
     - `npm run lint` — format check 
     - `npm run build` — compile sources

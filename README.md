@@ -24,8 +24,20 @@ Open the Discovery SPA through the Developer Edition welcome origin at
 
 ## Developer Commands
 
+Set `GITHUB_TOKEN` in your shell using a GitHub token with `read:packages`
+before running `npm ci` or `npm run container`. The tracked npm configuration
+scopes authentication to GitHub Packages for Mentor Forge packages. Third-party
+packages use public npm. Keep the token out of source control.
+
+SPA Utils is pinned to an exact version with its resolved tarball and integrity
+in `package-lock.json`. Use `npm ci` for routine installs. For an intentional
+upgrade, update the exact pin and lock together. To roll back, restore the
+previous verified GitHub Packages pin and lock together, run a clean install,
+and rebuild the image. The Docker build uses a BuildKit secret, with no AWS
+credentials required.
+
 ```sh
-## install dependencies (run `mh` first for CodeArtifact auth)
+## install locked dependencies
 npm ci
 
 ## install Cypress binaries
@@ -52,8 +64,12 @@ npm run test:ui
 ## run Cypress E2E tests
 npm run cypress
 
-## run Cypress E2E tests headlessly
+## run the full packaged Cypress suite headlessly
 npm run cypress:run
+
+## run Cypress against Vite with npm run dev and the backing API already running
+npm run cypress:dev
+npm run cypress:run:dev
 
 ## de down and start db + api containers
 npm run api 
@@ -78,7 +94,7 @@ npm run container
 | **nginx (this container)** | `/discovery/` document prefix, SPA history fallback, `/discovery/api/` → `discovery_api`, dual runtime-config paths, cache headers |
 | **Discovery API** | Authorization enforcement, card list filtering, notification dismiss and cancel, Card `type` and relative `link` projection |
 
-Uses `@mentor-forge/mentorhub_spa_utils` **1.0.6**. Package shared list `CardGrid` was removed in 1.0.6 — Discovery keeps its local list grid and does not harvest it into spa_utils. Local nav config is disallowed — do not pass `navItems`, URL maps, or ALB origins to `PageFrame`. Cross-SPA hrefs are absolute welcome/ALB `:8080` URLs from `buildJourneyUrl`, never direct debug ports (`:8398`, etc.). Token-tab `display_name` (`admin-token-display-name-display`) and PageFrame chrome `nav-profile-name-display` are owned by spa_utils 1.0.6 — this SPA does not map or fall back from token `name`. List-card bodies stay on local `MarkdownView` (`marked` + `dompurify` already pinned here); do not add those packages for package `MarkdownEditor`.
+Uses `@mentor-forge/mentorhub_spa_utils` **1.0.7**. Package shared list `CardGrid` was removed in 1.0.6 — Discovery keeps its local list grid and does not harvest it into spa_utils. Local nav config is disallowed — do not pass `navItems`, URL maps, or ALB origins to `PageFrame`. Cross-SPA hrefs are absolute welcome/ALB `:8080` URLs from `buildJourneyUrl`, never direct debug ports (`:8398`, etc.). Token-tab `display_name` (`admin-token-display-name-display`) and PageFrame chrome `nav-profile-name-display` are owned by spa_utils 1.0.6 — this SPA does not map or fall back from token `name`. List-card bodies stay on local `MarkdownView` (`marked` + `dompurify` already pinned here); do not add those packages for package `MarkdownEditor`.
 
 ### Prohibited patterns
 - Hosting detail/edit/create pages that belong to another journey SPA
@@ -173,9 +189,10 @@ After the initial Home query succeeds, a Home result containing exactly one link
 - Covers API client (`name` query encoding), `useCards` (debounce, query keys, client-side notification filter, source-change reset, stale-result rejection), and `createActionHref` ALB composition
 
 ### E2E Tests
-- Cypress against the packaged SPA on `http://localhost:8398` (`npm run service` must be running; do not run `npm run dev` at the same time)
+- Use `npm run cypress:run` against the packaged SPA on `http://localhost:8398` after `npm run service`. This is the full suite, including Nginx-specific routing, cache headers, and runtime configuration.
+- Use `npm run cypress:dev` or `npm run cypress:run:dev` with the backing API and Vite running. These commands run the browser behavior applicable to Vite.
 - Prefer `cy.visitPrefixed(...)` over raw `cy.visit` for in-app routes — it asserts `PerformanceNavigationTiming` so a Vue Router rewrite cannot mask an un-prefixed document fetch
-- Specs: `navigation.cy.ts` (PageFrame chrome, this SPA’s `/discovery/config` Settings host and mentee admin gate, Token-tab / chrome `display_name` from spa_utils **1.0.6** (`admin-token-display-name-display`, `nav-profile-name-display`)), `cards.cy.ts` (local CardGrid catalogs with `discovery-*-grid` ids — not package `data-card-grid` — Search by Name, Invite/New, Dismiss/Cancel, Home auto-follow; card bodies are local `MarkdownView` — assert rendered `h2` / `strong` HTML and do not open edit mode), `deployment.cy.ts` (redirects, history fallback, cache headers, dual runtime-config, authenticated and unauthenticated `/discovery/api` proxy). Hamburger catalog role gates are tested in spa_utils, not here. Card / Search by Name `name` is a document field, not the token display claim. Package `MarkdownEditor` resting view is owned by spa_utils **1.0.6** and is not used on these list pages; this SPA did not add `marked` / `dompurify` for that editor (pre-existing pins remain only for local `MarkdownView`).
+- Specs: `navigation.cy.ts` (PageFrame chrome, this SPA’s `/discovery/config` Settings host and mentee admin gate, Token-tab / chrome `display_name` from spa_utils **1.0.7** (`admin-token-display-name-display`, `nav-profile-name-display`)), `cards.cy.ts` (local CardGrid catalogs with `discovery-*-grid` ids — not package `data-card-grid` — Search by Name, Invite/New, Dismiss/Cancel, Home auto-follow; card bodies are local `MarkdownView` — assert rendered `h2` / `strong` HTML and do not open edit mode), `deployment.cy.ts` (redirects, history fallback, cache headers, dual runtime-config, authenticated and unauthenticated `/discovery/api` proxy). Hamburger catalog role gates are tested in spa_utils, not here. Card / Search by Name `name` is a document field, not the token display claim. Package `MarkdownEditor` resting view is owned by spa_utils **1.0.7** and is not used on these list pages; this SPA did not add `marked` / `dompurify` for that editor (pre-existing pins remain only for local `MarkdownView`).
 - UI role gating is UX; API authorization is proven separately via Bearer requests through `/discovery/api/`
 
 ## Automation Support
@@ -187,7 +204,7 @@ role gates and collection hrefs are tested in spa_utils — this SPA only assert
 and routes:
 
 - Always present when authenticated: `nav-drawer-toggle`, `page-frame-title`, `nav-profile-link`
-- spa_utils **1.0.6** ids this host asserts (not local `nav-*` ids):
+- spa_utils **1.0.7** ids this host asserts (not local `nav-*` ids):
   - Token tab `admin-token-display-name-display` — config intercept `token.display_name`; missing claim renders `unknown` (no `name` / `given_name` / `email` fallback)
   - PageFrame chrome `nav-profile-name-display` below Logout — `config.token.display_name` in the drawer footer (`unknown` when the claim is blank or missing)
 - This SPA hosts Settings at `/discovery/config` (`nav-settings-link`, admin-only)
@@ -206,3 +223,17 @@ Do not define host `nav-*` ids in this SPA.
 - Runtime enumerators come from `GET /discovery/api/config`, not OpenAPI
 - Container uses `API_HOST`, `API_PORT`, and `IDP_LOGIN_URI` at startup; same image every environment
 - This container serves only the Discovery journey. It is not an edge router and does not proxy other journey SPAs or their APIs.
+
+### Nginx runtime updates
+
+The Dockerfile pins the official stable Nginx 1.30.7 Alpine image by its
+multi-platform index digest. To update it, confirm the latest stable patch
+against the [Nginx security advisories](https://nginx.org/en/security_advisories.html)
+and use `docker buildx imagetools inspect` to verify the official tag and index
+for AMD64 and ARM64. Update the tag and digest together.
+
+Build both platforms with refreshed bases, check `nginx -v` and `nginx -V` in
+each application image, and scan both images. Run the full packaged Cypress
+suite and validate the generated config with `nginx -t -c /tmp/nginx.conf`.
+After main publishes, record and verify the published digest before promoting
+that same image between environments.
